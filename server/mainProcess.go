@@ -1,6 +1,8 @@
 package main
 
 import (
+	. "../blockData"
+	. "../message"
 	"net"
 	"sync"
 )
@@ -22,23 +24,23 @@ type IContex struct {
 	mobileAddr        *net.UDPAddr
 	device2mobileData IBlockData
 	mobile2deviceData IBlockData
-	state             int
-	msgId             uint32
-	msgIdMutex        *sync.Mutex
+	State             int
+	MsgId             uint32
+	MsgIdMutex        *sync.Mutex
 }
 
 func (this *IContex) sendMessage(msg IMessage) {
 	var dstAddr *net.UDPAddr
-	if DIVICE == msg.msgDst {
+	if DIVICE == msg.MsgDst {
 		dstAddr = this.deviceAddr
-	} else if MOBILE == msg.msgDst {
+	} else if MOBILE == msg.MsgDst {
 		dstAddr = this.mobileAddr
 	}
 
 	if dstAddr != nil {
 		MessageSend(this.conn, *dstAddr, msg)
 	} else {
-		fmt.Printf("message dump: %v", msg)
+		fmt.Printf("message dump:\r\n %v\r\n", msg)
 	}
 
 }
@@ -72,10 +74,10 @@ func clientConnectConfirm(ctx IContex) {
 		n, addr, data := readFromConn(ctx.conn)
 
 		msg := MessageParse(data[:n])
-		if DIVICE == msg.msgSrc && MSG_AUTH_REQ == msg.msgType {
-			fmt.Println("device auth message recieved.")
+		if DIVICE == msg.MsgSrc && MSG_AUTH_REQ == msg.MsgType {
+			fmt.Printf("device auth message received. from %v...\r\n", addr)
 			ctx.deviceAddr = addr
-			msg.msgType = MSG_ACK
+			msg.MsgType = MSG_ACK
 			MessageSend(ctx.conn, *addr, *msg)
 			break
 		}
@@ -83,32 +85,46 @@ func clientConnectConfirm(ctx IContex) {
 
 }
 
+func onAuthenticate(ctx *IContex, msg *IMessage, addr *net.UDPAddr) {
+	fmt.Printf("Auth message received. from %v...\r\n", addr)
+	if DIVICE == msg.MsgSrc {
+		ctx.deviceAddr = addr
+	} else if MOBILE == msg.MsgSrc {
+		ctx.mobileAddr = addr
+	}
+	msg.MsgType = MSG_ACK
+	MessageSend(ctx.conn, *addr, *msg)
+}
+
 func processLoop(conn *net.UDPConn) {
 	var ctx IContex
 	ctx.conn = conn
 	ctx.deviceAddr = nil
 	ctx.mobileAddr = nil
-	ctx.state = SERVER_STATE_INIT
-	ctx.msgId = 0
-	ctx.msgIdMutex = new(sync.Mutex)
+	ctx.State = SERVER_STATE_INIT
+	ctx.MsgId = 0
+	ctx.MsgIdMutex = new(sync.Mutex)
+
+	go deviceProcessLoop(&ctx)
+	go mobileProcessLoop(&ctx)
 
 	for true {
-		// we need to wait device connet to server first
-		if SERVER_STATE_READY != ctx.state {
-			clientConnectConfirm(ctx)
-			ctx.state = SERVER_STATE_READY
-
-			go deviceProcessLoop(ctx)
-			go mobileProcessLoop(ctx)
-		}
-
-		n, _, data := readFromConn(ctx.conn)
-
+		n, addr, data := readFromConn(ctx.conn)
 		msg := MessageParse(data[:n])
 
-		if DIVICE == msg.msgSrc {
+		if MSG_AUTH_REQ == msg.MsgType {
+			onAuthenticate(&ctx, msg, addr)
+			ctx.State = SERVER_STATE_READY
+			continue
+		}
+
+		if SERVER_STATE_READY != ctx.State {
+			continue
+		}
+
+		if DIVICE == msg.MsgSrc {
 			main2deviceChan <- msg
-		} else if MOBILE == msg.msgSrc {
+		} else if MOBILE == msg.MsgSrc {
 			main2mobileChan <- msg
 		}
 

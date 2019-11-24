@@ -1,4 +1,4 @@
-package main
+package message
 
 import (
 	"encoding/binary"
@@ -23,12 +23,12 @@ const (
 )
 
 type IMessage struct {
-	msgSrc     byte
-	msgDst     byte
-	msgType    byte
-	msgId      uint32
-	payload    []byte
-	payloadLen uint32
+	MsgSrc     byte
+	MsgDst     byte
+	MsgType    byte
+	MsgId      uint32
+	Payload    []byte
+	PayloadLen uint32
 }
 
 const MSG_BASE_LEN = 10
@@ -48,12 +48,12 @@ func MessageParse(data []byte) *IMessage {
 		return nil
 	}
 
-	msg.msgSrc = data[4]
-	msg.msgType = data[5]
-	msg.msgId = binary.LittleEndian.Uint32(data[6:10])
+	msg.MsgSrc = data[4]
+	msg.MsgType = data[5]
+	msg.MsgId = binary.LittleEndian.Uint32(data[6:10])
 	if msgLen > MSG_BASE_LEN {
-		msg.payload = data[MSG_BASE_LEN:]
-		msg.payloadLen = uint32(msgLen - MSG_BASE_LEN)
+		msg.Payload = data[MSG_BASE_LEN:]
+		msg.PayloadLen = uint32(msgLen - MSG_BASE_LEN)
 	}
 
 	return &msg
@@ -62,12 +62,12 @@ func MessageParse(data []byte) *IMessage {
 func MessageSerialize(msg IMessage) []byte {
 	data := make([]byte, MSG_BASE_LEN)
 	binary.LittleEndian.PutUint32(data, uint32(MAGIC_VALUE))
-	data[4] = msg.msgSrc
-	data[5] = msg.msgType
-	binary.LittleEndian.PutUint32(data[6:], msg.msgId)
+	data[4] = msg.MsgSrc
+	data[5] = msg.MsgType
+	binary.LittleEndian.PutUint32(data[6:], msg.MsgId)
 
-	if msg.payload != nil {
-		data = append(data, msg.payload...)
+	if msg.Payload != nil {
+		data = append(data, msg.Payload...)
 	}
 
 	return data
@@ -77,6 +77,19 @@ func MessageSend(conn *net.UDPConn, addr net.UDPAddr, msg IMessage) bool {
 	data := MessageSerialize(msg)
 
 	_, err := conn.WriteToUDP(data, &addr)
+
+	if err != nil {
+		fmt.Printf("write failed, err: %v\n", err)
+		return false
+	}
+
+	return true
+}
+
+func MessageSendWithoutAddr(conn *net.UDPConn, msg IMessage) bool {
+	data := MessageSerialize(msg)
+
+	_, err := conn.Write(data)
 
 	if err != nil {
 		fmt.Printf("write failed, err: %v\n", err)

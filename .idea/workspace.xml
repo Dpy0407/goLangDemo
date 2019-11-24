@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="574bf366-9a2a-4e12-ba99-31e79bae7406" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/deviceProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/deviceProcess.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mainProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/mainProcess.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/message.go" beforeDir="false" afterPath="$PROJECT_DIR$/message.go" afterDir="false" />
-    </list>
+    <list default="true" id="574bf366-9a2a-4e12-ba99-31e79bae7406" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,12 +18,6 @@
   <component name="GOROOT" path="/usr/local/go" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="65" />
-    <option name="y" value="-4" />
-    <option name="width" value="1855" />
-    <option name="height" value="1084" />
   </component>
   <component name="ProjectId" id="1U0SjaUxRmeaKuV7TtvCTg9c5UL" />
   <component name="ProjectLevelVcsManager">
@@ -51,6 +37,12 @@
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="watcher.settings" />
   </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/blockData" />
+      <recent name="$PROJECT_DIR$/message" />
+    </key>
+  </component>
   <component name="RunDashboard">
     <option name="ruleStates">
       <list>
@@ -63,27 +55,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Build.go build goLangDemo/">
-    <configuration name="go build goLangDemo/" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Build.go build server">
+    <configuration name="go build client" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="demoServer" />
       <working_directory value="$PROJECT_DIR$/" />
       <kind value="DIRECTORY" />
-      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/client" />
+      <directory value="$PROJECT_DIR$/client" />
       <method v="2" />
     </configuration>
-    <configuration name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+    <configuration name="go build server" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
       <module name="demoServer" />
       <working_directory value="$PROJECT_DIR$/" />
-      <go_parameters value="-i" />
-      <kind value="FILE" />
-      <filePath value="$PROJECT_DIR$/main.go" />
-      <directory value="$PROJECT_DIR$/" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$/server" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Go Build.go build client" />
+      <item itemvalue="Go Build.go build server" />
+    </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Build.go build goLangDemo/" />
-        <item itemvalue="Go Build.go build main.go" />
+        <item itemvalue="Go Build.go build server" />
       </list>
     </recent_temporary>
   </component>
@@ -100,5 +94,31 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/client/main.go</url>
+          <line>30</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/client/clientContex.go</url>
+          <line>49</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/server/deviceProcess.go</url>
+          <line>26</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/server/deviceProcess.go</url>
+          <line>32</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

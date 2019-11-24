@@ -9,7 +9,7 @@ const PORT = 9090
 
 func main() {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.IPv4(0, 0, 0, 0),
+		IP:   net.IPv4(127, 0, 0, 1),
 		Port: PORT,
 	})
 
