@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 import . "../message"
 
@@ -39,13 +40,16 @@ func (this *IClientContex) loop() {
 	this.sendData.InitData()
 	for {
 		this.dataSend()
-
+		time.Sleep(2 * time.Second)
+		this.sendData.InitData()
+		this.dataSend()
 		break
 	}
 
 }
 
 func (this *IClientContex) dataSend() {
+
 	for {
 		data := this.sendData.GetSendData()
 		var msg IMessage
@@ -61,7 +65,7 @@ func (this *IClientContex) dataSend() {
 			MessageSendWithoutAddr(this.conn, msg)
 			this.sendData.RetryCnt -= 1
 			resp := this.getMessage()
-			fmt.Printf("get Ack: %d\r\n", msg.MsgType)
+			fmt.Printf("get Ack: 0x%X\r\n", resp.MsgType)
 			if resp.MsgType == MSG_DATA_CONTINUE {
 				break
 			} else if MSG_DATA_ACK_DONE == resp.MsgType {

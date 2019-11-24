@@ -25,6 +25,7 @@ func mobileStep(ctx *IContex) {
 		dataSend(ctx, DIVICE, data)
 		ctx.mobile2deviceData.State = DATA_STATE_SENDING
 	} else if DATA_STATE_SENDING == ctx.mobile2deviceData.State {
+
 		if time.Now().Unix()-ctx.mobile2deviceData.SendTime > DATA_RETRY_TIMEOUT && ctx.mobile2deviceData.RetryCnt > 0 {
 			data := ctx.mobile2deviceData.GetLastSendData()
 			dataSend(ctx, DIVICE, data)

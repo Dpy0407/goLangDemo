@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="574bf366-9a2a-4e12-ba99-31e79bae7406" name="Default Changelist" comment="" />
+    <list default="true" id="574bf366-9a2a-4e12-ba99-31e79bae7406" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/blockData/blockData.go" beforeDir="false" afterPath="$PROJECT_DIR$/blockData/blockData.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/clientContex.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/clientContex.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/dataExample.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/dataExample.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/client/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/commonProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/commonProcess.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/deviceProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/deviceProcess.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/mainProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/mainProcess.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/mobileProcess.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/mobileProcess.go" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,18 +115,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/client/clientContex.go</url>
-          <line>49</line>
+          <line>53</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/server/deviceProcess.go</url>
-          <line>26</line>
-          <option name="timeStamp" value="18" />
+          <url>file://$PROJECT_DIR$/server/commonProcess.go</url>
+          <line>62</line>
+          <option name="timeStamp" value="24" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/server/deviceProcess.go</url>
-          <line>32</line>
-          <option name="timeStamp" value="21" />
+          <url>file://$PROJECT_DIR$/server/commonProcess.go</url>
+          <line>54</line>
+          <option name="timeStamp" value="25" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

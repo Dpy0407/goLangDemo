@@ -59,6 +59,8 @@ func (this *IBlockData) OnReceive(data []byte) byte {
 
 		// this is the first sequence
 		if 0 == seq {
+			// do init
+			this.Init()
 			this.BlockToken = token
 		} else {
 			if token != this.BlockToken {
@@ -110,7 +112,7 @@ func (this *IBlockData) GetSendData() []byte {
 		sendCnt := int(this.SendSeq) * this.SendStep
 
 		len := this.DataLen - sendCnt
-		if len < 0 {
+		if len <= 0 {
 			return nil
 		}
 		var senLen int

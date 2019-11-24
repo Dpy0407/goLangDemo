@@ -11,7 +11,7 @@ func readFromConn(conn *net.UDPConn) (int, *net.UDPAddr, []byte) {
 	for true {
 		n, addr, err := conn.ReadFromUDP(data)
 		if err != nil {
-			fmt.Println("read failed from addr: %v, err: %v\n", addr, err)
+			fmt.Printf("read failed from addr: %v, err: %v\r\n", addr, err)
 			continue
 		}
 

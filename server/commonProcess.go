@@ -45,15 +45,23 @@ func onDataReceived(ctx *IContex, msg IMessage) {
 }
 
 func onDataContinue(ctx *IContex, msg IMessage) {
-	var data []byte
+	var blockData *IBlockData
 	if DIVICE == msg.MsgSrc {
-		data = ctx.mobile2deviceData.GetSendData()
+		blockData = &ctx.mobile2deviceData
 	} else if MOBILE == msg.MsgSrc {
-		data = ctx.device2mobileData.GetSendData()
+		blockData = &ctx.device2mobileData
 	}
+
+	if DATA_STATE_SENDING != blockData.State {
+		fmt.Printf("invalid request!\r\n")
+		return
+	}
+
+	data := blockData.GetSendData()
 
 	if data == nil {
 		fmt.Printf("data is empty, request from 0x%X\r\n", msg.MsgSrc)
+		blockData.Init()
 		return
 	}
 

@@ -41,6 +41,13 @@ func (this *IContex) sendMessage(msg IMessage) {
 		MessageSend(this.conn, *dstAddr, msg)
 	} else {
 		fmt.Printf("message dump:\r\n %v\r\n", msg)
+		if msg.MsgType == MSG_PUT_DATA {
+			// fack ACK
+			resp := IMessage{}
+			resp.MsgSrc = msg.MsgDst
+			resp.MsgType = MSG_DATA_CONTINUE
+			main2deviceChan <- &resp
+		}
 	}
 
 }
@@ -53,7 +60,7 @@ func readFromConn(conn *net.UDPConn) (int, *net.UDPAddr, []byte) {
 	for true {
 		n, addr, err := conn.ReadFromUDP(data)
 		if err != nil {
-			fmt.Println("read failed from addr: %v, err: %v\n", addr, err)
+			fmt.Printf("read failed from addr: %v, err: %v\r\n", addr, err)
 			continue
 		}
 
@@ -123,9 +130,18 @@ func processLoop(conn *net.UDPConn) {
 		}
 
 		if DIVICE == msg.MsgSrc {
-			main2deviceChan <- msg
+			if MSG_DATA_CONTINUE == msg.MsgType || MSG_DATA_ACK_DONE == msg.MsgType {
+				// ack from data receiver
+				main2mobileChan <- msg
+			} else {
+				main2deviceChan <- msg
+			}
 		} else if MOBILE == msg.MsgSrc {
-			main2mobileChan <- msg
+			if MSG_DATA_CONTINUE == msg.MsgType || MSG_DATA_ACK_DONE == msg.MsgType {
+				main2deviceChan <- msg
+			} else {
+				main2mobileChan <- msg
+			}
 		}
 
 	}
