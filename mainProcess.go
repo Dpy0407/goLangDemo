@@ -1,6 +1,9 @@
 package main
 
-import "net"
+import (
+	"net"
+	"sync"
+)
 import "fmt"
 
 const (
@@ -14,11 +17,34 @@ const (
 )
 
 type IContex struct {
-	conn       *net.UDPConn
-	deviceAddr *net.UDPAddr
-	mobileAddr *net.UDPAddr
-	state      int
+	conn              *net.UDPConn
+	deviceAddr        *net.UDPAddr
+	mobileAddr        *net.UDPAddr
+	device2mobileData IBlockData
+	mobile2deviceData IBlockData
+	state             int
+	msgId             uint32
+	msgIdMutex        *sync.Mutex
 }
+
+func (this *IContex) sendMessage(msg IMessage) {
+	var dstAddr *net.UDPAddr
+	if DIVICE == msg.msgDst {
+		dstAddr = this.deviceAddr
+	} else if MOBILE == msg.msgDst {
+		dstAddr = this.mobileAddr
+	}
+
+	if dstAddr != nil {
+		MessageSend(this.conn, *dstAddr, msg)
+	} else {
+		fmt.Printf("message dump: %v", msg)
+	}
+
+}
+
+var main2deviceChan chan *IMessage = make(chan *IMessage, 5)
+var main2mobileChan chan *IMessage = make(chan *IMessage, 5)
 
 func readFromConn(conn *net.UDPConn) (int, *net.UDPAddr, []byte) {
 	data := make([]byte, 1024)
@@ -36,6 +62,9 @@ func readFromConn(conn *net.UDPConn) (int, *net.UDPAddr, []byte) {
 
 		return n, addr, data
 	}
+
+	// never
+	return -1, nil, nil
 }
 
 func clientConnectConfirm(ctx IContex) {
@@ -60,12 +89,17 @@ func processLoop(conn *net.UDPConn) {
 	ctx.deviceAddr = nil
 	ctx.mobileAddr = nil
 	ctx.state = SERVER_STATE_INIT
+	ctx.msgId = 0
+	ctx.msgIdMutex = new(sync.Mutex)
 
 	for true {
 		// we need to wait device connet to server first
 		if SERVER_STATE_READY != ctx.state {
 			clientConnectConfirm(ctx)
 			ctx.state = SERVER_STATE_READY
+
+			go deviceProcessLoop(ctx)
+			go mobileProcessLoop(ctx)
 		}
 
 		n, _, data := readFromConn(ctx.conn)
@@ -73,7 +107,9 @@ func processLoop(conn *net.UDPConn) {
 		msg := MessageParse(data[:n])
 
 		if DIVICE == msg.msgSrc {
-			onDeviceProcess(ctx, *msg)
+			main2deviceChan <- msg
+		} else if MOBILE == msg.msgSrc {
+			main2mobileChan <- msg
 		}
 
 	}

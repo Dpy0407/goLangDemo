@@ -1,51 +1,32 @@
 package main
 
-import (
-	"encoding/binary"
-	"fmt"
-)
+import "time"
 
-var reciveData IBlockData
+func deviceProcessLoop(ctx IContex) {
+	ctx.device2mobileData.init()
+	ctx.device2mobileData.sendStep = DATA_MOBILE_SEND_STEP
+	for true {
+		select {
+		case msg := <-main2deviceChan:
+			onMsgReceived(ctx, *msg)
 
-func onDeviceProcess(ctx IContex, msg IMessage) {
-	switch msg.msgType {
-	case MSG_POST_DATA:
+		default:
+			deviceStep(ctx)
+		}
 
-		break
-	default:
-		break
 	}
 }
 
-func onDataRecieved(ctx IContex, msg IMessage) {
-	var resp IMessage
-	data := msg.payload
-	token := binary.LittleEndian.Uint32(data[:4])
-	seq := data[4]
-	more := data[5]
-
-	resp.msgSrc = SERVER
-	resp.msgID = msg.msgID
-
-	// this is the first sequency
-	if 0 == seq {
-		reciveData.blockToken = token
-	} else {
-		if token != reciveData.blockToken {
-			fmt.Printf("data token error, current token = %d, recived token = %d", reciveData.blockToken, token)
-			resp.msgType = MSG_ERROR
-			goto SEND_LABLE
+func deviceStep(ctx IContex) {
+	if DATA_STATE_SEND_REQUIRED == ctx.device2mobileData.state {
+		data := ctx.device2mobileData.getSendData()
+		dataSend(ctx, MOBILE, data)
+		ctx.device2mobileData.state = DATA_STATE_SENDING
+	} else if DATA_STATE_SENDING == ctx.device2mobileData.state {
+		if time.Now().Unix()-ctx.device2mobileData.sendTime > DATA_RETRY_TIMEOUT && ctx.device2mobileData.retryCnt > 0 {
+			data := ctx.device2mobileData.getLastSendData()
+			dataSend(ctx, MOBILE, data)
+			ctx.device2mobileData.retryCnt -= 1
 		}
 	}
-
-	reciveData.rawData = append(reciveData.rawData, data[6:]...)
-	reciveData.lastSeq = seq
-
-	if 0 == more {
-		reciveData.state = DATA_STATE_SEND_REQUIRED
-	} else {
-		reciveData.state = DATA_STATE_RICIEVING
-	}
-
-SEND_LABLE:
 }

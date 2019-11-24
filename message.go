@@ -12,18 +12,21 @@ const MOBILE = 0x31
 const SERVER = 0x32
 
 const (
-	MSG_AUTH_REQ  = 0x40
-	MSG_POST_DATA = 0x41
-
-	MSG_CONTINUE = 0x60
-	MSG_ERROR    = 0x61
-	MSG_ACK      = 0x80
+	MSG_AUTH_REQ       = 0x40
+	MSG_POST_DATA      = 0x41
+	MSG_PUT_DATA       = 0x42
+	MSG_DATA_CONTINUE  = 0x60
+	MSG_DATA_ERROR     = 0x61
+	MSG_INTERNAL_ERROR = 0x62
+	MSG_DATA_ACK_DONE  = 0x63
+	MSG_ACK            = 0x80
 )
 
 type IMessage struct {
 	msgSrc     byte
+	msgDst     byte
 	msgType    byte
-	msgID      uint32
+	msgId      uint32
 	payload    []byte
 	payloadLen uint32
 }
@@ -47,7 +50,7 @@ func MessageParse(data []byte) *IMessage {
 
 	msg.msgSrc = data[4]
 	msg.msgType = data[5]
-	msg.msgID = binary.LittleEndian.Uint32(data[6:10])
+	msg.msgId = binary.LittleEndian.Uint32(data[6:10])
 	if msgLen > MSG_BASE_LEN {
 		msg.payload = data[MSG_BASE_LEN:]
 		msg.payloadLen = uint32(msgLen - MSG_BASE_LEN)
@@ -61,7 +64,7 @@ func MessageSerialize(msg IMessage) []byte {
 	binary.LittleEndian.PutUint32(data, uint32(MAGIC_VALUE))
 	data[4] = msg.msgSrc
 	data[5] = msg.msgType
-	binary.LittleEndian.PutUint32(data[6:], msg.msgID)
+	binary.LittleEndian.PutUint32(data[6:], msg.msgId)
 
 	if msg.payload != nil {
 		data = append(data, msg.payload...)

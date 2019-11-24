@@ -5,14 +5,12 @@ import (
 	"net"
 )
 
-var limitChan = make(chan bool, 10)
-
-var dataFromDeviceChan = make(chan []byte, 2)
+const PORT = 9090
 
 func main() {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: 9090,
+		Port: PORT,
 	})
 
 	if err != nil {
@@ -21,7 +19,7 @@ func main() {
 	}
 
 	defer conn.Close()
-
+	fmt.Printf("server start, port = %d...\r\n", PORT)
 	processLoop(conn)
 
 	fmt.Println("message from device!")
