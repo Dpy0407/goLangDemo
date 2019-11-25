@@ -15,6 +15,7 @@ const (
 	MSG_AUTH_REQ       = 0x40
 	MSG_POST_DATA      = 0x41
 	MSG_PUT_DATA       = 0x42
+	MSG_OFFLINE        = 0x43
 	MSG_DATA_CONTINUE  = 0x60
 	MSG_DATA_ERROR     = 0x61
 	MSG_INTERNAL_ERROR = 0x62

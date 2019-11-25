@@ -69,11 +69,11 @@ func onDataContinue(ctx *IContex, msg IMessage) {
 }
 
 func onDataError(ctx *IContex, msg IMessage) {
-	var blockData IBlockData
+	var blockData *IBlockData
 	if DIVICE == msg.MsgSrc {
-		blockData = ctx.mobile2deviceData
+		blockData = &ctx.mobile2deviceData
 	} else if MOBILE == msg.MsgSrc {
-		blockData = ctx.device2mobileData
+		blockData = &ctx.device2mobileData
 	}
 
 	// try send again
@@ -85,13 +85,14 @@ func onDataError(ctx *IContex, msg IMessage) {
 }
 
 func onDataAckDone(ctx *IContex, msg IMessage) {
-	var blockData IBlockData
+	var blockData *IBlockData
 	if DIVICE == msg.MsgSrc {
-		blockData = ctx.mobile2deviceData
+		blockData = &ctx.mobile2deviceData
 	} else if MOBILE == msg.MsgSrc {
-		blockData = ctx.device2mobileData
+		blockData = &ctx.device2mobileData
 	}
 
+	//fmt.Printf("get MSG_DATA_ACK_DONE from 0x%X\r\n", msg.MsgSrc)
 	// Init block data, prepare for next receive & send
 	blockData.Init()
 }

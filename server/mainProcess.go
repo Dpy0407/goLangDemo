@@ -93,7 +93,7 @@ func clientConnectConfirm(ctx IContex) {
 }
 
 func onAuthenticate(ctx *IContex, msg *IMessage, addr *net.UDPAddr) {
-	fmt.Printf("Auth message received. from %v...\r\n", addr)
+	fmt.Printf("Auth message received. id = 0x%X...\r\n", msg.MsgSrc)
 	if DIVICE == msg.MsgSrc {
 		ctx.deviceAddr = addr
 	} else if MOBILE == msg.MsgSrc {
@@ -101,6 +101,21 @@ func onAuthenticate(ctx *IContex, msg *IMessage, addr *net.UDPAddr) {
 	}
 	msg.MsgType = MSG_ACK
 	MessageSend(ctx.conn, *addr, *msg)
+
+	if ctx.mobileAddr != nil && ctx.deviceAddr != nil {
+		ctx.State = SERVER_STATE_READY
+	}
+}
+
+func onOffline(ctx *IContex, msg *IMessage) {
+	fmt.Printf("client offline, id = 0x%X...\r\n", msg.MsgSrc)
+	if DIVICE == msg.MsgSrc {
+		ctx.deviceAddr = nil
+	} else if MOBILE == msg.MsgSrc {
+		ctx.mobileAddr = nil
+	}
+
+	ctx.State = SERVER_STATE_INIT
 }
 
 func processLoop(conn *net.UDPConn) {
@@ -121,11 +136,14 @@ func processLoop(conn *net.UDPConn) {
 
 		if MSG_AUTH_REQ == msg.MsgType {
 			onAuthenticate(&ctx, msg, addr)
-			ctx.State = SERVER_STATE_READY
+			continue
+		} else if MSG_OFFLINE == msg.MsgType {
+			onOffline(&ctx, msg)
 			continue
 		}
 
 		if SERVER_STATE_READY != ctx.State {
+			fmt.Printf("client not ready, msg not handle, from id = 0x%X\r\n", msg.MsgSrc)
 			continue
 		}
 

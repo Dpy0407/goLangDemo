@@ -18,7 +18,7 @@ const (
 	DATA_STATE_RICIEVING
 	DATA_STATE_SEND_REQUIRED
 	DATA_STATE_SENDING
-	DATA_STATE_DONEs
+	DATA_STATE_DONE = DATA_STATE_SEND_REQUIRED
 )
 
 type IBlockData struct {
@@ -64,14 +64,14 @@ func (this *IBlockData) OnReceive(data []byte) byte {
 			this.BlockToken = token
 		} else {
 			if token != this.BlockToken {
-				fmt.Printf("data token error, current token = %d, received token = %d", this.BlockToken, token)
+				fmt.Printf("data token error, current token = %d, received token = %d\r\n", this.BlockToken, token)
 				ret = MSG_DATA_ERROR
 				break
 			}
 
 			// some block lost before
 			if this.LastSeq+1 != seq {
-				fmt.Printf("data receive sequence error, LastSeq=%d, received seq=%d", this.LastSeq, seq)
+				fmt.Printf("data receive sequence error, LastSeq=%d, received seq = %d\r\n", this.LastSeq, seq)
 				ret = MSG_DATA_ERROR
 				break
 			}
@@ -167,7 +167,7 @@ func (this *IBlockData) GetLastSendData() []byte {
 		break
 	}
 
-	data = append(data, this.SendSeq)
+	data = append(data, this.SendSeq-1)
 	data = append(data, more)
 	data = append(data, this.RawData[start:end]...)
 	this.SendTime = time.Now().Unix()
