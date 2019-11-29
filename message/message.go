@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"net"
 )
-import "fmt"
+import "log"
 
 const MAGIC_VALUE = 603160
-const DIVICE = 0x30
+const DEVICE = 0x30
 const MOBILE = 0x31
 const SERVER = 0x32
 
@@ -16,6 +16,9 @@ const (
 	MSG_POST_DATA      = 0x41
 	MSG_PUT_DATA       = 0x42
 	MSG_OFFLINE        = 0x43
+	MSG_TRANS_START    = 0x50
+	MSG_TRANS_DATA     = 0x51
+	MSG_TRANS_ACK      = 0x52
 	MSG_DATA_CONTINUE  = 0x60
 	MSG_DATA_ERROR     = 0x61
 	MSG_INTERNAL_ERROR = 0x62
@@ -45,7 +48,8 @@ func MessageParse(data []byte) *IMessage {
 	magic := binary.LittleEndian.Uint32(data[0:4])
 
 	if magic != MAGIC_VALUE {
-		fmt.Println("magic number error, %d", magic)
+		log.Printf("magic number error, %d\r\n", magic)
+		log.Println(data)
 		return nil
 	}
 
@@ -74,28 +78,117 @@ func MessageSerialize(msg IMessage) []byte {
 	return data
 }
 
-func MessageSend(conn *net.UDPConn, addr net.UDPAddr, msg IMessage) bool {
+func MessageSend(udpConn *net.UDPConn, addr net.UDPAddr, msg IMessage) bool {
+	if udpConn == nil {
+		log.Printf("udp conn is empty!")
+		return false
+	}
+
 	data := MessageSerialize(msg)
 
-	_, err := conn.WriteToUDP(data, &addr)
+	_, err := udpConn.WriteToUDP(data, &addr)
 
 	if err != nil {
-		fmt.Printf("write failed, err: %v\n", err)
+		log.Printf("write failed, err: %v\n", err)
 		return false
 	}
 
 	return true
 }
 
-func MessageSendWithoutAddr(conn *net.UDPConn, msg IMessage) bool {
+func MessageSendWithoutAddr(udpConn *net.UDPConn, msg IMessage) bool {
+	if udpConn == nil {
+		log.Printf("udp conn is empty!")
+		return false
+	}
+
 	data := MessageSerialize(msg)
 
-	_, err := conn.Write(data)
+	_, err := udpConn.Write(data)
 
 	if err != nil {
-		fmt.Printf("write failed, err: %v\n", err)
+		log.Printf("write failed, err: %v\n", err)
 		return false
 	}
 
 	return true
+}
+
+func MessageSendTCP(tcpConn *net.TCPConn, msg IMessage) bool {
+	if tcpConn == nil {
+		log.Printf("tcp conn is empty!")
+		return false
+	}
+
+	data := MessageSerialize(msg)
+
+	tmp := make([]byte, 4)
+	binary.LittleEndian.PutUint32(tmp, uint32(len(data)))
+	data = append(tmp, data...)
+
+	//log.Println(data)
+	_, err := tcpConn.Write(data)
+
+	if err != nil {
+		log.Printf("write failed, err: %v\n", err)
+		return false
+	}
+
+	return true
+}
+
+var glastData []byte
+
+func ReadFromTCPConn(tcpConn *net.TCPConn) (int, []byte) {
+	tmp := make([]byte, 10*1024)
+	var data []byte
+	lenData := -1
+	t := 0
+	for true {
+		n, err := tcpConn.Read(tmp)
+		if err != nil {
+			t++
+			log.Printf("tcp read failed, err: %v\r\n", err)
+			if t > 2 {
+				break
+			}
+			continue
+		}
+
+		if -1 == lenData {
+			glastData = append(glastData, tmp[:n]...)
+			if len(glastData) >= 4 {
+				lenData = int(binary.LittleEndian.Uint32(glastData[0:4]))
+				glastData = glastData[4:]
+
+				if len(glastData) <= lenData {
+					data = append(data, glastData...)
+					glastData = glastData[0:0]
+				} else {
+					data = append(data, glastData[:lenData]...)
+					glastData = glastData[lenData:]
+				}
+			} else {
+				continue
+			}
+
+			if len(data) == lenData {
+				return lenData, data
+			}
+		} else {
+			if n+len(data) <= lenData {
+				data = append(data, tmp[:n]...)
+			} else {
+				data = append(data, tmp[:lenData-len(data)]...)
+				glastData = append(glastData, tmp[lenData-len(data):n]...)
+			}
+
+			if len(data) == lenData {
+				return lenData, data
+			}
+		}
+
+	}
+
+	return 0, nil
 }

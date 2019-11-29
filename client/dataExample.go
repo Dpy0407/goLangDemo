@@ -4,6 +4,7 @@ import (
 	. "../blockData"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -14,6 +15,7 @@ type IDataExample struct {
 
 func (this *IDataExample) InitData() {
 	this.Init()
+	this.SendStep = DATA_BASE_SEND_STEP
 	rand.Seed(time.Now().UnixNano())
 	this.BlockToken = rand.Uint32()
 	dlen := 2048 + rand.Uint32()%4096
@@ -28,20 +30,18 @@ func (this *IDataExample) InitData() {
 
 	this.DataLen = int(dlen)
 
-	fmt.Print("generate random data:\r\n")
+	log.Print("generate random data:\r\n")
 	this.dumpData(0)
 }
 
 func (this *IDataExample) dumpData(ori int) {
 	var s string
-	tk := make([]byte, 4)
 	if ori == 0 {
 		s = ">>>"
 	} else {
 		s = "<<<"
 	}
-	binary.LittleEndian.PutUint32(tk, this.BlockToken)
-	fmt.Printf("%s  data token: %v\r\n", s, tk)
+	fmt.Printf("%s  data token: 0x%08X\r\n", s, this.BlockToken)
 	fmt.Printf("%s  data len:   %d\r\n", s, this.DataLen)
 	dlen := this.DataLen
 	if dlen > 32 {

@@ -1,20 +1,26 @@
 package main
 
 import (
+	. "../blockData"
+	. "../message"
 	"fmt"
+	"log"
 	"net"
+	"os"
 )
-import . "../message"
 
 type IClientContex struct {
-	conn        *net.UDPConn
-	authed      bool
-	MsgId       uint32
-	id          byte
-	sendData    IDataExample
-	recieveData IDataExample
-	msgChan     chan *IMessage
-	cmdChan     chan string
+	udpConn      *net.UDPConn
+	tcpConn      *net.TCPConn
+	authed       bool
+	MsgId        uint32
+	id           byte
+	sendData     IDataExample
+	recieveData  IDataExample
+	msgChan      chan *IMessage
+	cmdChan      chan string
+	fileTranMode bool
+	fileInfo     IFileInfo
 }
 
 func (this *IClientContex) onExit() {
@@ -24,7 +30,7 @@ func (this *IClientContex) onExit() {
 		msg.MsgType = MSG_OFFLINE
 		msg.MsgId = this.MsgId
 		this.MsgId += 1
-		MessageSendWithoutAddr(this.conn, msg)
+		this.sendMessage(msg)
 	}
 }
 
@@ -35,7 +41,12 @@ func (this *IClientContex) authenticate() bool {
 	msg.MsgId = this.MsgId
 	this.MsgId += 1
 
-	MessageSendWithoutAddr(this.conn, msg)
+	if DEVICE == this.id {
+		MessageSendWithoutAddr(this.udpConn, msg)
+	} else {
+		MessageSendTCP(this.tcpConn, msg)
+	}
+
 	msg = *this.getMessage()
 	if msg.MsgType != MSG_ACK {
 		this.authed = false
@@ -46,12 +57,29 @@ func (this *IClientContex) authenticate() bool {
 }
 
 func (this *IClientContex) getMessage() *IMessage {
-	n, _, data := readFromConn(this.conn)
+	var data []byte
+	n := -1
+	if DEVICE == this.id {
+		n, _, data = readFromConn(this.udpConn)
+	} else if MOBILE == this.id {
+		n, data = ReadFromTCPConn(this.tcpConn)
+		if n <= 0 {
+			// tcp connect lost, exit
+			os.Exit(0)
+		}
+	} else {
+		return nil
+	}
+
 	return MessageParse(data[:n])
 }
 
 func (this *IClientContex) sendMessage(msg IMessage) {
-	MessageSendWithoutAddr(this.conn, msg)
+	if DEVICE == this.id {
+		MessageSendWithoutAddr(this.udpConn, msg)
+	} else if MOBILE == this.id {
+		MessageSendTCP(this.tcpConn, msg)
+	}
 }
 
 func getCommand(ctx *IClientContex) {
@@ -75,49 +103,56 @@ func (this *IClientContex) loop() {
 	go onProcess(this)
 	for {
 		msg := this.getMessage()
-		this.msgChan <- msg
+		if msg != nil {
+			this.msgChan <- msg
+		}
 	}
-	//this.sendData.InitData()
-	//this.dataSend()
-
 }
 
-func (this *IClientContex) dataSend() {
+//func readFromTCPConn(tcpConn *net.TCPConn) (int, []byte) {
+//	data := make([]byte, 10*1024)
+//	t := 0
+//	for true {
+//		n, err := tcpConn.Read(data)
+//		if err != nil {
+//			t++
+//			log.Printf("tcp read failed, err: %v\r\n", err)
+//			if t > 2 {
+//				// tcp connect lost, exit
+//				os.Exit(0)
+//			}
+//			continue
+//		}
+//
+//		if n < MSG_BASE_LEN {
+//			log.Println("Invalid Data")
+//			continue
+//		}
+//
+//		return n, data
+//	}
+//
+//	// never
+//	return -1, nil
+//}
 
-	for {
-		data := this.sendData.GetSendData()
-		var msg IMessage
-		msg.MsgSrc = this.id
-		msg.MsgType = MSG_POST_DATA
-		msg.MsgId = this.MsgId
-		this.MsgId += 1
-		msg.Payload = data
-
-		retFlag := false
-		for {
-			fmt.Printf("send data to server, seq: %d\r\n", this.sendData.SendSeq)
-			MessageSendWithoutAddr(this.conn, msg)
-			this.sendData.RetryCnt -= 1
-			resp := this.getMessage()
-			fmt.Printf("get Ack: 0x%X\r\n", resp.MsgType)
-			if resp.MsgType == MSG_DATA_CONTINUE {
-				break
-			} else if MSG_DATA_ACK_DONE == resp.MsgType {
-				return
-			} else {
-				if this.sendData.RetryCnt > 0 {
-					continue
-				} else {
-					retFlag = true
-					break
-				}
-			}
-
+func readFromConn(udpConn *net.UDPConn) (int, *net.UDPAddr, []byte) {
+	data := make([]byte, 2048)
+	for true {
+		n, addr, err := udpConn.ReadFromUDP(data)
+		if err != nil {
+			log.Printf("read failed from addr: %v, err: %v\r\n", addr, err)
+			continue
 		}
 
-		if retFlag {
-			return
+		if n < MSG_BASE_LEN {
+			log.Println("Invalid Data")
+			continue
 		}
 
+		return n, addr, data
 	}
+
+	// never
+	return -1, nil, nil
 }

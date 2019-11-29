@@ -2,65 +2,114 @@ package main
 
 import (
 	. "../message"
-	"fmt"
+	"flag"
+	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func readFromConn(conn *net.UDPConn) (int, *net.UDPAddr, []byte) {
-	data := make([]byte, 1024)
-	for true {
-		n, addr, err := conn.ReadFromUDP(data)
-		if err != nil {
-			fmt.Printf("read failed from addr: %v, err: %v\r\n", addr, err)
-			continue
-		}
+var (
+	help     bool
+	remote   string
+	ctype    string
+	filePath string
+)
 
-		if n < MSG_BASE_LEN {
-			fmt.Println("Invalid Data")
-			continue
-		}
+func init() {
+	flag.BoolVar(&help, "h", false, "show help info")
+	flag.StringVar(&remote, "r", "", "set remot ip & port, eg. 127.0.0.1:8080")
+	flag.StringVar(&ctype, "t", "device", "set client type, <device/mobile>")
+	flag.StringVar(&filePath, "f", "", "load file to transmite")
 
-		return n, addr, data
-	}
-
-	// never
-	return -1, nil, nil
+	log.SetFlags(log.Lshortfile)
 }
 
 func main() {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	args := os.Args
 
-	var id byte = DIVICE
-
-	if len(args) < 2 {
-		fmt.Println("start device client as default.")
-	} else if args[1] == "mobile" {
-		fmt.Println("start mobile client.")
-		id = MOBILE
-	} else {
-		fmt.Println("no support, start device client as default.")
-	}
-
-	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4(127, 0, 0, 1),
-		Port: 9090,
-	})
-
-	if err != nil {
-		fmt.Println("connet failed!", err)
+	flag.Parse()
+	if help {
+		flag.Usage()
 		return
 	}
 
-	defer conn.Close()
+	var addrString string
 
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	if filePath != "" {
+		// using tcp transmite
+		ctype = "mobile"
+	}
+
+	var id byte = DEVICE
+
+	if ctype == "mobile" {
+		log.Println("start mobile client.")
+		id = MOBILE
+	} else if ctype == "device" {
+		log.Println("start device client.")
+		id = DEVICE
+	} else {
+		log.Println("no support, start device client as default.")
+	}
+
+	if remote != "" {
+		addrString = remote
+	} else {
+		if DEVICE == id {
+			addrString = "127.0.0.1:8080"
+		} else {
+			addrString = "127.0.0.1:9090"
+		}
+	}
+
+	addr, err := net.ResolveTCPAddr("tcp", addrString)
+
+	if err != nil {
+		addr.IP = net.IP{127, 0, 0, 1}
+		if DEVICE == id {
+			addr.Port = 8080
+		} else {
+			addr.Port = 9090
+		}
+
+	}
+
+	log.Printf("connet to %v...\r\n", addr)
 	ctx := IClientContex{}
-	ctx.conn = conn
 	ctx.id = id
+
+	if DEVICE == ctx.id {
+		udpConn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+			IP:   addr.IP,
+			Port: addr.Port,
+		})
+
+		if err != nil {
+			log.Println("connet failed!", err)
+			return
+		}
+
+		defer udpConn.Close()
+
+		ctx.udpConn = udpConn
+	} else if MOBILE == ctx.id {
+		tcpConn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   addr.IP,
+			Port: addr.Port,
+		})
+
+		if err != nil {
+			log.Println("connet failed!", err)
+			return
+		}
+
+		defer tcpConn.Close()
+		ctx.tcpConn = tcpConn
+	}
 
 	go func() {
 		<-c
@@ -68,11 +117,16 @@ func main() {
 		os.Exit(0)
 	}()
 
+	if filePath != "" {
+		ctx.fileTranMode = true
+		ctx.fileInfo.FilePath = filePath
+	}
+
 	if ctx.authenticate() {
-		fmt.Println("connet to server success!")
+		log.Println("connet to server success!")
 		ctx.loop()
 	} else {
-		fmt.Println("connet to server failed!, client exit.")
+		log.Println("connet to server failed!, client exit.")
 	}
 
 }
