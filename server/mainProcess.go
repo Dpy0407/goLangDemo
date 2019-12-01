@@ -142,11 +142,13 @@ func tcpConnectLoop(ctx *IContex, tcpListener *net.TCPListener) {
 		if err != nil {
 			log.Printf("tcp connet error")
 		}
-
+		log.Printf("client connect success.")
 		n, data := ReadFromTCPConn(conn)
 		if n <= 0 {
 			continue
 		}
+
+		log.Printf("data: %v", data)
 		msg := MessageParse(data[:n])
 		if msg == nil {
 			continue
