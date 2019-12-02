@@ -4,15 +4,25 @@ import android.util.Log;
 
 import java.sql.Array;
 import java.util.Arrays;
+import java.util.List;
 
-public class DemoMessage implements Common{
-    private static final String TAG = "MSG";
+public class DemoMessage implements Common {
+    private static final String TAG = ">>> MSG";
     byte msgSrc;
     byte msgDst;
     byte msgType;
     int msgId;
     byte[] payload;
     int payloadLen;
+    static int baseLen;
+
+    DemoMessage() {
+        Log.d(TAG,"msg create");
+        payload = null;
+        payloadLen = 0;
+        msgId = 0;
+        baseLen = 10;
+    }
 
     public boolean parse(byte[] data) {
         int msgLen = data.length;
@@ -20,7 +30,7 @@ public class DemoMessage implements Common{
             return false;
         }
 
-        int magic = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+        int magic = data[0]| data[1] << 8 | data[2] << 16 | data[3] << 24;
 
         if (magic != MAGIC_VALUE) {
             Log.e(TAG, "magic number error! magic:" + magic);
@@ -36,6 +46,23 @@ public class DemoMessage implements Common{
         }
 
         return true;
+    }
+
+    public byte[] serialize() {
+        byte[] tmp = int2arr(MAGIC_VALUE);
+        byte[] data = Arrays.copyOf(tmp, baseLen + payloadLen);
+        data[4] = msgSrc;
+        data[5] = msgType;
+        tmp = int2arr(msgId);
+        for (int i = 0; i < 4; i++) {
+            data[6 + i] = tmp[i];
+        }
+
+        // payload
+        for (int i = 0; i < payloadLen; i++) {
+            data[baseLen + i] = payload[i];
+        }
+        return data;
     }
 
     static public byte[] int2arr(int a) {
@@ -55,9 +82,9 @@ public class DemoMessage implements Common{
         return result;
     }
 
-   static public String arr2HexString(byte[]data){
-        String s="";
-        for(int i=0;i<data.length;i++){
+    static public String arr2HexString(byte[] data) {
+        String s = "";
+        for (int i = 0; i < data.length; i++) {
             s += String.format(" 0x%02X", data[i]);
         }
         return s;

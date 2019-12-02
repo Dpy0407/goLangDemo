@@ -23,14 +23,25 @@ public interface Common {
     final byte MSG_DATA_ERROR = 0x61;
     final byte MSG_INTERNAL_ERROR = 0x62;
     final byte MSG_DATA_ACK_DONE = 0x63;
+    final byte MSG_HEARTBEAT       = 0x70;
+    final byte MSG_HEARTBEAT_ACK   = 0x71;
     final byte MSG_ACK = (byte)0x80;
 
     // --- cmd define ---
     final int CMD_CONNECT_SERVER = 0x00;
     final int CMD_DISCONNECT_SERVER = 0x01;
     final int CMD_SEND_DATA = 0x03;
+    final int CMD_START_HEARTBEAT = 0x04;
 
 
+    enum ClientState{
+        STATE_INIT,
+        STATE_AUTHING,
+        STATE_AUTHED
+    }
 
+   interface DataHandlers{
+       void onReciveHandle(byte[] data);
+   }
 }
 

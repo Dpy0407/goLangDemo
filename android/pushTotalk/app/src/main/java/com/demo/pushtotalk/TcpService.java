@@ -25,19 +25,38 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.locks.ReadWriteLock;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class TcpService extends Service implements Common {
     //    private SocketChannel client = null;
-    final String TAG = "TCPService";
+    final String TAG = ">>> TCPService";
     private Socket clientSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
+
+    private boolean isReadThreadStart = false;
+    private boolean isSendThreadStart = false;
+
+    private Lock sockeIStreamLock = new ReentrantLock();
+    private Lock sockeOStreamLock = new ReentrantLock();
+
+    private Queue<byte[]> sendQue = new LinkedList<byte[]>();
+
+    private DataHandlers mHandlers = null;
 
     CommandReceiver cmdReceiver;
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind");
         return new LocalBinder();
     }
 
@@ -48,7 +67,6 @@ public class TcpService extends Service implements Common {
         IntentFilter filter = new IntentFilter();
         filter.addAction(TCP_INTENT_ACTION_CMD);
         registerReceiver(cmdReceiver, filter);
-
     }
 
     @Override
@@ -66,33 +84,8 @@ public class TcpService extends Service implements Common {
         }
     }
 
-    public void StartServerListener() {
-        ServerListener a = new ServerListener();
-        a.start();
-    }
-
-    public void ConnectToServer() {
-        try {
-            if (clientSocket != null && clientSocket.isConnected()) {
-                inputStream = clientSocket.getInputStream();
-                outputStream = clientSocket.getOutputStream();
-                return;
-            }
-
-            clientSocket = new Socket("192.168.3.13", 9090);
-//            clientSocket.setSoTimeout(5*1000);
-            if (clientSocket != null) {
-                inputStream = clientSocket.getInputStream();
-                outputStream = clientSocket.getOutputStream();
-            }
-
-            StartServerListener();
-
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-
-        }
+    public void setHandlers(DataHandlers handlers) {
+        this.mHandlers = handlers;
     }
 
     public void DisconnectToServer() {
@@ -100,6 +93,15 @@ public class TcpService extends Service implements Common {
             if (clientSocket != null) {
                 clientSocket.close();
             }
+
+            sockeIStreamLock.lock();
+            inputStream = null;
+            sockeIStreamLock.unlock();
+
+            sockeOStreamLock.lock();
+            outputStream = null;
+            sockeOStreamLock.unlock();
+
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -108,6 +110,17 @@ public class TcpService extends Service implements Common {
 
 
     public void SendDataToServer(byte[] data) {
+        sockeOStreamLock.lock();
+        if (outputStream == null) {
+            Log.e(TAG, "outputStream is null.");
+            return;
+        }
+
+        if (data == null || data.length == 0) {
+            Log.e(TAG, "empty data.");
+            return;
+        }
+
         try {
             Log.d(TAG, "data len:" + data.length);
             outputStream.write(DemoMessage.int2arr(data.length));
@@ -115,53 +128,220 @@ public class TcpService extends Service implements Common {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        sockeOStreamLock.unlock();
     }
 
     private class connectThread extends Thread {
         public void run() {
-            ConnectToServer();
-
-            byte[] arr = new byte[10];
-            arr[0] = MAGIC_VALUE & 0xFF;
-            arr[1] = (MAGIC_VALUE >> 8) & 0xFF;
-            arr[2] = (MAGIC_VALUE >> 16) & 0xFF;
-            arr[3] = (MAGIC_VALUE >> 24) & 0xFF;
-
-            arr[4] = MOBILE;
-            arr[5] = MSG_AUTH_REQ;
-            SendDataToServer(arr);
-        }
-    }
-
-
-    private class ServerListener extends Thread {
-        public void run() {
             try {
-                while (true) {
-                    byte[] buffer = new byte[10 * 1024];
-                    int len = inputStream.read(buffer);
-
-                    if (buffer.length > 0) {
-                        sendMsg(Arrays.copyOf(buffer, len));
-                    }
-                    Thread.sleep(100);
+                if (clientSocket != null && clientSocket.isConnected()) {
+                    return;
                 }
-            } catch (CharacterCodingException e) {
-                e.printStackTrace();
+
+                clientSocket = new Socket("192.168.43.61", 8080);
+//            clientSocket.setSoTimeout(5*1000);
+                if (clientSocket != null && clientSocket.isConnected()) {
+                    sockeIStreamLock.lock();
+                    inputStream = clientSocket.getInputStream();
+                    sockeIStreamLock.unlock();
+
+                    sockeOStreamLock.lock();
+                    outputStream = clientSocket.getOutputStream();
+                    sockeOStreamLock.unlock();
+                }
+
+
+                StartReadThread();
+                StartSendThread();
+
             } catch (IOException e) {
+                // TODO Auto-generated catch block
                 e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
             }
         }
     }
 
+    public void StartSendThread() {
+        if (isSendThreadStart) {
+            return;
+        }
 
-    private void sendMsg(byte[] data) {
-//        Intent intent = new Intent(Common.TCP_INTENT_ACTION_CMD);
-//        intent.putExtra("data", data);
-//        this.sendBroadcast(intent);
+        SendThread s = new SendThread();
+        s.start();
+        isSendThreadStart = true;
+    }
 
+    public void StartReadThread() {
+        if (isReadThreadStart) {
+            return;
+        }
+
+        ReadThread r = new ReadThread();
+        r.start();
+
+        isReadThreadStart = true;
+    }
+
+    private class heartBeatThread extends Thread {
+        public void run() {
+            DemoMessage msg = new DemoMessage();
+            msg.msgSrc = MOBILE;
+            msg.msgType = MSG_HEARTBEAT;
+            msg.msgId = 0;
+            byte[] data = msg.serialize();
+            Log.d(TAG, "start heartbeat thread.");
+            while (true) {
+                if ((clientSocket != null) && clientSocket.isConnected()) {
+                    SendDataToServer(data);
+                }else{
+                    return;
+                }
+
+                try {
+                    Thread.sleep(5 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+
+                    return;
+                }
+            }
+        }
+    }
+
+    private class SendThread extends Thread {
+        public void run() {
+            try {
+                while (true) {
+                    byte[] data = sendQue.poll();
+                    if (data != null) {
+                        SendDataToServer(data);
+                    }
+
+                    Thread.sleep(100);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            isReadThreadStart = false;
+        }
+    }
+
+    private class ReadThread extends Thread {
+        private byte[] lastData;
+
+        private int readData(byte[] out) {
+            byte[] tmp = new byte[10 * 1024];
+            int lenData = -1;
+            int t = 0;
+            int idx = 0;
+            int i = 0;
+            try {
+                while (true) {
+                    int n = inputStream.read(tmp);
+                    if (n <= 0) {
+                        t++;
+                        if (t > 2) {
+                            break;
+                        }
+                        continue;
+                    }
+
+                    if (-1 == lenData) {
+
+                        int lastLen = 0;
+                        if (lastData != null) {
+                            lastLen = lastData.length;
+                            lastData = Arrays.copyOf(lastData, lastLen + n);
+                        } else {
+                            lastData = new byte[n];
+                        }
+
+                        for (i = 0; i < n; i++) {
+                            lastData[lastLen + i] = tmp[i];
+                        }
+
+
+                        if (lastData.length >= 4) {
+                            lenData = DemoMessage.arr2int(lastData);
+                            lastData = Arrays.copyOfRange(lastData, 4, lastData.length);
+
+                            if (lastData.length <= lenData) {
+                                for (i = 0; i < lastData.length; i++) {
+                                    out[idx++] = lastData[i];
+                                }
+
+                                lastData = null;
+                            } else {
+                                for (i = 0; i < lenData; i++) {
+                                    out[idx++] = lastData[i];
+                                }
+
+                                lastData = Arrays.copyOfRange(lastData, lenData, lastData.length);
+                            }
+                        } else {
+                            continue;
+                        }
+
+                        if (idx == lenData) {
+                            return lenData;
+                        }
+                    } else {
+                        if ((n + idx) <= lenData) {
+                            for (i = 0; i < n; i++) {
+                                out[idx++] = tmp[i];
+                            }
+                        } else {
+                            int cpLen = lenData - idx;
+                            for (i = 0; i < cpLen; i++) {
+                                out[idx++] = tmp[i];
+                            }
+
+                            lastData = Arrays.copyOfRange(tmp, cpLen, n);
+                        }
+
+
+                        if (idx == lenData) {
+                            return lenData;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+
+            }
+
+            return -1;
+        }
+
+        public void run() {
+            try {
+                while (true) {
+                    byte[] buffer = new byte[10 * 1024];
+
+                    int len = readData(buffer);
+
+                    if (buffer.length > 0) {
+                        if (mHandlers != null) {
+                            mHandlers.onReciveHandle(Arrays.copyOf(buffer, len));
+                        } else {
+                            dumpData(Arrays.copyOf(buffer, len));
+                        }
+
+                    }
+                    Thread.sleep(100);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            isReadThreadStart = false;
+        }
+    }
+
+
+    private void dumpData(byte[] data) {
         Log.d(TAG, DemoMessage.arr2HexString(data));
     }
 
@@ -175,6 +355,12 @@ public class TcpService extends Service implements Common {
                     Log.d(TAG, "connect to server...");
                     connectThread c = new connectThread();
                     c.start();
+                } else if (CMD_SEND_DATA == cmd) {
+                    byte[] data = intent.getByteArrayExtra("data");
+                    sendQue.offer(data);
+                } else if (CMD_START_HEARTBEAT == cmd){
+                    heartBeatThread h = new heartBeatThread();
+                    h.start();
                 }
             }
         }
