@@ -146,6 +146,24 @@ func ReadFromTCPConn(tcpConn *net.TCPConn) (int, []byte) {
 	var data []byte
 	lenData := -1
 	t := 0
+	// if lastData include atlest one message, return imediatly.
+	if glastData != nil && len(glastData) > 4 {
+		tmpLen := int(binary.LittleEndian.Uint32(glastData[0:4]))
+		glastData = glastData[4:]
+		if len(glastData) >= tmpLen {
+			data = append(data, glastData[:tmpLen]...)
+
+			if len(glastData) == tmpLen {
+				glastData = glastData[0:0]
+			} else {
+				glastData = glastData[tmpLen:]
+			}
+
+			return tmpLen, data
+		}
+
+	}
+
 	for true {
 		n, err := tcpConn.Read(tmp)
 		if err != nil {

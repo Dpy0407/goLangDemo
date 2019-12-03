@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class DemoMessage implements Common {
-    private static final String TAG = ">>> MSG";
+    private static final String TAG = "[*** MSG]";
     byte msgSrc;
     byte msgDst;
     byte msgType;
@@ -17,7 +17,6 @@ public class DemoMessage implements Common {
     static int baseLen;
 
     DemoMessage() {
-        Log.d(TAG,"msg create");
         payload = null;
         payloadLen = 0;
         msgId = 0;
@@ -30,7 +29,7 @@ public class DemoMessage implements Common {
             return false;
         }
 
-        int magic = data[0]| data[1] << 8 | data[2] << 16 | data[3] << 24;
+        int magic = data[0] | data[1] << 8 | data[2] << 16 | data[3] << 24;
 
         if (magic != MAGIC_VALUE) {
             Log.e(TAG, "magic number error! magic:" + magic);
@@ -77,7 +76,10 @@ public class DemoMessage implements Common {
     static public int arr2int(byte[] arr) {
         int result = 0;
 
-        result = arr[0] | arr[1] << 8 | arr[2] << 16 | arr[3] << 24;
+        result |= arr[0] & 0xFF;
+        result |= (arr[1] & 0xFF) << 8;
+        result |= (arr[2] & 0xFF) << 16;
+        result |= (arr[3] & 0xFF) << 24;
 
         return result;
     }

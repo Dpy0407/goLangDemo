@@ -37,7 +37,7 @@ import java.util.Queue;
 
 public class TcpService extends Service implements Common {
     //    private SocketChannel client = null;
-    final String TAG = ">>> TCPService";
+    final String TAG = "[*** TCPS]";
     private Socket clientSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
@@ -138,7 +138,7 @@ public class TcpService extends Service implements Common {
                     return;
                 }
 
-                clientSocket = new Socket("192.168.43.61", 8080);
+                clientSocket = new Socket(CONFIG_SERVER_IP, CONFIG_SERVER_PORT);
 //            clientSocket.setSoTimeout(5*1000);
                 if (clientSocket != null && clientSocket.isConnected()) {
                     sockeIStreamLock.lock();
@@ -194,12 +194,12 @@ public class TcpService extends Service implements Common {
             while (true) {
                 if ((clientSocket != null) && clientSocket.isConnected()) {
                     SendDataToServer(data);
-                }else{
+                } else {
                     return;
                 }
 
                 try {
-                    Thread.sleep(5 * 1000);
+                    Thread.sleep(CONFIG_HEARTBEAT_PERIOD * 1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
 
@@ -238,6 +238,26 @@ public class TcpService extends Service implements Common {
             int idx = 0;
             int i = 0;
             try {
+                // if lastData include atlest one message, return imediatly.
+                if (lastData != null && lastData.length > 4) {
+                    int tmpLen = DemoMessage.arr2int(lastData);
+
+                    if (lastData.length >= tmpLen + 4) {
+                        for (i = 0; i < tmpLen; i++) {
+                            out[i] = lastData[4 + i];
+                        }
+
+                        if (lastData.length == tmpLen + 4) {
+                            lastData = null;
+                        } else {
+                            lastData = Arrays.copyOfRange(lastData, tmpLen + 4, lastData.length);
+                        }
+
+                        return tmpLen;
+                    }
+                }
+
+
                 while (true) {
                     int n = inputStream.read(tmp);
                     if (n <= 0) {
@@ -358,7 +378,7 @@ public class TcpService extends Service implements Common {
                 } else if (CMD_SEND_DATA == cmd) {
                     byte[] data = intent.getByteArrayExtra("data");
                     sendQue.offer(data);
-                } else if (CMD_START_HEARTBEAT == cmd){
+                } else if (CMD_START_HEARTBEAT == cmd) {
                     heartBeatThread h = new heartBeatThread();
                     h.start();
                 }
@@ -366,5 +386,32 @@ public class TcpService extends Service implements Common {
         }
     }
 
+    public void cmdHandle(int cmd, byte[] data) {
+        switch (cmd) {
+            case CMD_CONNECT_SERVER: {
+                Log.d(TAG, "connect to server...");
+                connectThread c = new connectThread();
+                c.start();
+            }
+            break;
+
+            case CMD_SEND_DATA: {
+                if (data != null) {
+                    sendQue.offer(data);
+                }
+            }
+            break;
+            case CMD_START_HEARTBEAT: {
+                heartBeatThread h = new heartBeatThread();
+                h.start();
+            }
+            break;
+            default:
+                Log.e(TAG, "invalide cmd.");
+                break;
+
+
+        }
+    }
 
 }

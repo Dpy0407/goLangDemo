@@ -154,7 +154,6 @@ func tcpConnectLoop(ctx *IContex, tcpListener *net.TCPListener) {
 			continue
 		}
 
-		log.Printf("data: %v", data)
 		msg := MessageParse(data[:n])
 		if msg == nil {
 			continue

@@ -61,7 +61,7 @@ func main() {
 	}
 	defer tcpListener.Close()
 
-	log.Printf("server start, udp port = %d, tcp port = %d...\r\n", udpPort, tcpPort)
+	log.Printf("server start, tcp port = %d, udp port = %d...\r\n", tcpPort, udpPort)
 
 	processLoop(udpConn, tcpListener)
 
