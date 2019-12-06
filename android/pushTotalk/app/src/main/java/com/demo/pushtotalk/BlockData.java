@@ -159,6 +159,15 @@ public class BlockData implements Common {
         return this.lastData;
     }
 
+    public void loadData(byte[] data){
+        this.Init();
+        this.SendStep = DATA_MOBILE_SEND_STEP;
+        Random rand = new Random(System.currentTimeMillis());
+        this.BlockToken = rand.nextInt() | 0xF;
+        this.RawData = data;
+        this.DataLen = data.length;
+    }
+
 
     public void randomInit() {
         this.Init();
@@ -166,6 +175,8 @@ public class BlockData implements Common {
 
         Random rand = new Random(System.currentTimeMillis());
         this.BlockToken = rand.nextInt();
+        // used for debug
+        this.BlockToken &= 0xFFFFFFF0;
         int dlen = 2048 + rand.nextInt(4096);
         this.RawData = new byte[dlen];
 

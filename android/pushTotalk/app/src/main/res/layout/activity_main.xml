@@ -12,21 +12,74 @@
         android:orientation="vertical"
         >
 
-        <Button
-            android:id="@+id/buttonConnect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Connect"
-            android:layout_marginTop="20px"
-             />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
 
-        <Button
-            android:id="@+id/buttenSend"
+        >
+        <ListView
+            android:id="@+id/voice_list"
+            android:divider="@color/empty"
+            android:dividerHeight="18dp"
+            android:stackFromBottom="true"
+            android:transcriptMode="alwaysScroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Send"
-            android:layout_marginTop="20px"
-            />
+            android:layout_height="match_parent"/>
+
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:background="@color/colorPrimary"
+            >
+
+                <Button
+                    android:id="@+id/buttonConnect"
+                    android:layout_height="match_parent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Connect"
+                     />
+
+                <Button
+                    android:id="@+id/buttenSend"
+                    android:layout_height="match_parent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Send"
+                    />
+
+                <Button
+                    android:id="@+id/pushToTalk"
+                    android:layout_height="match_parent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Push to Talk"
+                    />
+
+                <Button
+                    android:id="@+id/buttonPlay"
+                    android:layout_height="match_parent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_margin="5dp"
+                    android:text="Play"
+                    android:layout_marginTop="20px"
+                    />
+
+
+        </LinearLayout>
+
+
 
     </LinearLayout>
 

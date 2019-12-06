@@ -89,6 +89,7 @@ func getCommand(ctx *IClientContex) {
 	for {
 		var cmd string
 		fmt.Scanln(&cmd)
+
 		if cmd != "" {
 			ctx.cmdChan <- cmd
 		}

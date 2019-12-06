@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -13,11 +14,48 @@ type IDataExample struct {
 	IBlockData
 }
 
+func (this *IDataExample) LoadData(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		log.Printf("get file info error, file: %s", path)
+		return false
+	}
+	dataSize := info.Size()
+	fileObj, err := os.Open(path)
+	defer fileObj.Close()
+
+	if err != nil {
+		log.Printf("open file failed, file: %s", path)
+		return false
+	}
+
+	data := make([]byte, dataSize)
+	_, err = fileObj.Read(data)
+	if err != nil {
+		log.Printf("read file failed, file: %s", path)
+		return false
+	}
+
+	this.Init()
+	this.SendStep = DATA_BASE_SEND_STEP
+	rand.Seed(time.Now().UnixNano())
+	this.BlockToken = rand.Uint32()
+
+	this.BlockToken |= 0xF
+	this.RawData = data
+	this.DataLen = len(data)
+
+	return true
+}
+
 func (this *IDataExample) InitData() {
 	this.Init()
 	this.SendStep = DATA_BASE_SEND_STEP
 	rand.Seed(time.Now().UnixNano())
 	this.BlockToken = rand.Uint32()
+	// used to debug
+	this.BlockToken &= 0xFFFFFFF0
+
 	dlen := 2048 + rand.Uint32()%4096
 
 	this.RawData = make([]byte, dlen)

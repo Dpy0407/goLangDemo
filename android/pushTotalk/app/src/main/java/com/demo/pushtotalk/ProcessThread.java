@@ -3,7 +3,7 @@ package com.demo.pushtotalk;
 import android.util.Log;
 
 public class ProcessThread extends Thread implements Common {
-    static private String TAG = "[*** PROCS]";
+    static private String TAG = "*** ProcessThread";
     private MainActivity context = null;
     private TcpService service = null;
 
@@ -47,7 +47,15 @@ public class ProcessThread extends Thread implements Common {
         }
 
         if (BlockState.DATA_STATE_DONE == context.mReviceData.State) {
-            context.mReviceData.dumpData(1);
+
+            if((context.mReviceData.BlockToken & 0xF) != 0){
+                // this is true data
+                context.saveVoice(context.mReviceData.RawData);
+            }else{
+                // this is debug data
+                context.mReviceData.dumpData(1);
+            }
+
             context.mReviceData.Init();
         }
     }

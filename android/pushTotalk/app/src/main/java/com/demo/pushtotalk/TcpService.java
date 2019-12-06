@@ -38,21 +38,16 @@ import java.util.Queue;
 public class TcpService extends Service implements Common {
     //    private SocketChannel client = null;
     final String TAG = "[*** TCPS]";
+    CommandReceiver cmdReceiver;
     private Socket clientSocket = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
-
     private boolean isReadThreadStart = false;
     private boolean isSendThreadStart = false;
-
     private Lock sockeIStreamLock = new ReentrantLock();
     private Lock sockeOStreamLock = new ReentrantLock();
-
     private Queue<byte[]> sendQue = new LinkedList<byte[]>();
-
     private DataHandlers mHandlers = null;
-
-    CommandReceiver cmdReceiver;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -70,18 +65,16 @@ public class TcpService extends Service implements Common {
     }
 
     @Override
+    public void onDestroy() {
+        unregisterReceiver(cmdReceiver);
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 //        connectThread conn = new connectThread();
 //        conn.start();
         Log.d(TAG, "onStartCommand");
         return super.onStartCommand(intent, flags, startId);
-    }
-
-
-    public class LocalBinder extends Binder {
-        public TcpService getService() {
-            return TcpService.this;
-        }
     }
 
     public void setHandlers(DataHandlers handlers) {
@@ -108,7 +101,6 @@ public class TcpService extends Service implements Common {
         }
     }
 
-
     public void SendDataToServer(byte[] data) {
         sockeOStreamLock.lock();
         if (outputStream == null) {
@@ -129,6 +121,65 @@ public class TcpService extends Service implements Common {
             e.printStackTrace();
         }
         sockeOStreamLock.unlock();
+    }
+
+    public void StartSendThread() {
+        if (isSendThreadStart) {
+            return;
+        }
+
+        SendThread s = new SendThread();
+        s.start();
+        isSendThreadStart = true;
+    }
+
+    public void StartReadThread() {
+        if (isReadThreadStart) {
+            return;
+        }
+
+        ReadThread r = new ReadThread();
+        r.start();
+
+        isReadThreadStart = true;
+    }
+
+    private void dumpData(byte[] data) {
+        Log.d(TAG, DemoMessage.arr2HexString(data));
+    }
+
+    public void cmdHandle(int cmd, byte[] data) {
+        switch (cmd) {
+            case CMD_CONNECT_SERVER: {
+                Log.d(TAG, "connect to server...");
+                connectThread c = new connectThread();
+                c.start();
+            }
+            break;
+
+            case CMD_SEND_DATA: {
+                if (data != null) {
+                    sendQue.offer(data);
+                }
+            }
+            break;
+            case CMD_START_HEARTBEAT: {
+                heartBeatThread h = new heartBeatThread();
+                h.start();
+            }
+            break;
+            default:
+                Log.e(TAG, "invalide cmd.");
+                break;
+
+
+        }
+    }
+
+    public class LocalBinder extends Binder {
+        public TcpService getService() {
+            return TcpService.this;
+        }
     }
 
     private class connectThread extends Thread {
@@ -160,27 +211,6 @@ public class TcpService extends Service implements Common {
 
             }
         }
-    }
-
-    public void StartSendThread() {
-        if (isSendThreadStart) {
-            return;
-        }
-
-        SendThread s = new SendThread();
-        s.start();
-        isSendThreadStart = true;
-    }
-
-    public void StartReadThread() {
-        if (isReadThreadStart) {
-            return;
-        }
-
-        ReadThread r = new ReadThread();
-        r.start();
-
-        isReadThreadStart = true;
     }
 
     private class heartBeatThread extends Thread {
@@ -360,12 +390,6 @@ public class TcpService extends Service implements Common {
         }
     }
 
-
-    private void dumpData(byte[] data) {
-        Log.d(TAG, DemoMessage.arr2HexString(data));
-    }
-
-
     private class CommandReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -383,34 +407,6 @@ public class TcpService extends Service implements Common {
                     h.start();
                 }
             }
-        }
-    }
-
-    public void cmdHandle(int cmd, byte[] data) {
-        switch (cmd) {
-            case CMD_CONNECT_SERVER: {
-                Log.d(TAG, "connect to server...");
-                connectThread c = new connectThread();
-                c.start();
-            }
-            break;
-
-            case CMD_SEND_DATA: {
-                if (data != null) {
-                    sendQue.offer(data);
-                }
-            }
-            break;
-            case CMD_START_HEARTBEAT: {
-                heartBeatThread h = new heartBeatThread();
-                h.start();
-            }
-            break;
-            default:
-                Log.e(TAG, "invalide cmd.");
-                break;
-
-
         }
     }
 

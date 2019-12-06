@@ -4,6 +4,7 @@ import (
 	. "../blockData"
 	. "../message"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -64,6 +65,7 @@ func onMsgRecieved(ctx *IClientContex, msg *IMessage) {
 
 func onCommand(ctx *IClientContex, cmd string) {
 	cmd = strings.ToLower(cmd)
+	log.Printf("input cmd: " + cmd)
 	if cmd == "send" || cmd == "s" {
 		if DATA_STATE_SENDING == ctx.sendData.State {
 			log.Println("busy on sending...")
@@ -79,6 +81,26 @@ func onCommand(ctx *IClientContex, cmd string) {
 		dataSend(ctx, data)
 		ctx.sendData.State = DATA_STATE_SENDING
 	}
+
+	if cmd[:1] == "f" && len(cmd) > 2 {
+		if DATA_STATE_SENDING == ctx.sendData.State {
+			log.Println("busy on sending...")
+			return
+		}
+		if ctx.sendData.LoadData(cmd[2:]) {
+			if DEVICE == ctx.id {
+				ctx.sendData.SendStep = DATA_DEVICE_SEND_STEP
+			} else {
+				ctx.sendData.SendStep = DATA_MOBILE_SEND_STEP
+			}
+
+			data := ctx.sendData.GetSendData()
+			dataSend(ctx, data)
+			ctx.sendData.State = DATA_STATE_SENDING
+		}
+
+	}
+
 }
 
 func onStep(ctx *IClientContex) {
@@ -97,8 +119,14 @@ func onStep(ctx *IClientContex) {
 	}
 
 	if DATA_STATE_DONE == ctx.recieveData.State {
-		log.Print("received data:\r\n")
-		ctx.recieveData.dumpData(1)
+		if ctx.recieveData.BlockToken&0xF != 0 {
+			// this is voice data, save it
+			fileSave(ctx.recieveData.RawData)
+		} else {
+			log.Print("received data:\r\n")
+			ctx.recieveData.dumpData(1)
+		}
+
 		ctx.recieveData.Init()
 	}
 
@@ -300,4 +328,21 @@ func startTrans(ctx *IClientContex) {
 	data = append(data, fileName...)
 	resp.Payload = data
 	ctx.sendMessage(resp)
+}
+
+func fileSave(data []byte) {
+	fileName := fmt.Sprintf("%v.amr", time.Now().Unix())
+	fileObj, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		log.Printf("open file error")
+		return
+	}
+
+	_, err = fileObj.Write(data)
+	if err != nil {
+		log.Printf("write file error")
+		return
+	}
+	fileObj.Close()
+	log.Printf("file received: %s", fileName)
 }

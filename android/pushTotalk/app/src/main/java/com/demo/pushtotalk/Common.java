@@ -37,9 +37,21 @@ public interface Common {
     final int CMD_START_HEARTBEAT = 0x04;
 
     // --- block params ---
-    final int DATA_MOBILE_SEND_STEP = 10 * 1024;
+    final int DATA_MOBILE_SEND_STEP = 20 * 1024;
     final int DATA_RETRY_MAX_CNT = 3;
     final int DATA_RETRY_TIMEOUT = 5 * 1000; // ms
+
+    // --- messages define used by UI & thread
+    final int MSG_H_VOICE_SAVE_SUCCESS = 0;
+    final int MSG_H_VOICE_SAVE_FAILED = 1;
+
+
+    // --- voice type --
+    enum VoiceOrientation{
+        SEND,
+        RECEIVE,
+        INVAID
+    }
 
     enum ClientState {
         STATE_INIT,
