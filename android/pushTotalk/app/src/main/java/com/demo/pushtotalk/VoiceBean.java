@@ -15,6 +15,8 @@ public class VoiceBean implements Common {
 
     public int duration = 0;
 
+    public long unixTime = 0;
+
     public File getFile() {
         return file;
     }
@@ -23,41 +25,55 @@ public class VoiceBean implements Common {
         this.file = file;
     }
 
-    public void setFile(String path){
+    public void setFile(String path) {
         this.file = new File(path);
     }
 
-    public String getFilePath(){
+    public String getFilePath() {
         return this.file.getAbsolutePath().toString();
     }
 
-    public boolean load(String path){
+    public boolean load(String path) {
         this.setFile(path);
         return doLoad();
     }
 
-    public boolean load(File file){
+    public boolean load(File file) {
         this.setFile((file));
         return doLoad();
     }
 
-    private boolean doLoad(){
-        if(this.file == null){
+    private boolean doLoad() {
+        if (this.file == null) {
             return false;
         }
 
-        if(!this.file.exists()){
-            Log.i(TAG, "file not exist, path = "+this.getFilePath());
+        if (!this.file.exists()) {
+            Log.i(TAG, "file not exist, path = " + this.getFilePath());
             return false;
         }
 
         String fileName = this.file.getName();
 
-        if(fileName.indexOf("_s")>0){
-            this.ori = VoiceOrientation.SEND;
-        }else{
-            this.ori = VoiceOrientation.RECEIVE;
+        int idx = fileName.indexOf("_");
+
+        if (idx > 0 && (fileName.length() > idx + 2)) {
+            if (fileName.toCharArray()[idx + 1] == 's') {
+                this.ori = VoiceOrientation.SEND;
+            } else {
+                this.ori = VoiceOrientation.RECEIVE;
+            }
+        } else {
+            return false;
         }
+
+        String time_s = fileName.substring(0, idx);
+        try {
+            this.unixTime = Long.parseLong(time_s);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
 
         MediaPlayer player = new MediaPlayer();
         try {
@@ -65,7 +81,7 @@ public class VoiceBean implements Common {
             player.prepare();
             this.duration = player.getDuration();
             player.release();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }

@@ -44,10 +44,12 @@ public interface Common {
     // --- messages define used by UI & thread
     final int MSG_H_VOICE_SAVE_SUCCESS = 0;
     final int MSG_H_VOICE_SAVE_FAILED = 1;
+    final int MSG_H_VOICE_PLAYING = 2;
+    final int MSG_H_VOICE_PLAY_END = 3;
 
 
     // --- voice type --
-    enum VoiceOrientation{
+    enum VoiceOrientation {
         SEND,
         RECEIVE,
         INVAID

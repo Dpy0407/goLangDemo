@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
+    <item
+        android:right="5dp"
+
+        android:bottom="5dp"
+
+        >
             <rotate
-                android:fromDegrees="45"
-                android:pivotX="15%"
+                android:fromDegrees="-45"
+                android:pivotX="85%"
                 android:pivotY="-35%">
                 <shape android:shape="rectangle">
                     <size
-                        android:width="50dp"
-                        android:height="50dp" />
+                        android:width="5dp"
+                        android:height="5dp" />
                     <solid android:color="#FF75AD35" />
                 </shape>
             </rotate>
     </item>
+
+
+    <item android:left="20dp">
+        <shape android:shape="rectangle"
+            >
+            <size
+                android:height="50dp"
+                android:width="120dp"/>
+            <!-- 圆角弧度 15 -->
+            <corners android:radius="5dp"/>
+
+            <gradient
+                android:angle="90"
+                android:type="linear"
+                android:startColor="#75AD35"
+                android:endColor="#61B161"/>
+
+        </shape>
+    </item>
+
+
 </layer-list>

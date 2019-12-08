@@ -5,8 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class VoiceListAdapter extends BaseAdapter {
@@ -17,10 +20,16 @@ public class VoiceListAdapter extends BaseAdapter {
     private List<VoiceBean> voiceList = null;
     private LayoutInflater inflater = null;
 
+    private SimpleDateFormat dataFormat;
+    private int timeIdx = 0;
+
     VoiceListAdapter(MainActivity context, List<VoiceBean> list) {
         this.context = context;
         this.voiceList = list;
         this.inflater = LayoutInflater.from(context);
+        String strDateFormat = "yyyy/MM/dd HH:mm";
+        this.dataFormat = new SimpleDateFormat(strDateFormat);
+        this.timeIdx = strDateFormat.indexOf("HH:mm");
     }
 
     @Override
@@ -40,10 +49,10 @@ public class VoiceListAdapter extends BaseAdapter {
     }
 
     @Override
-    public int getItemViewType(int position){
-        if (voiceList.get(position).ori == Common.VoiceOrientation.SEND){
+    public int getItemViewType(int position) {
+        if (voiceList.get(position).ori == Common.VoiceOrientation.SEND) {
             return TYPE_RIGHT;
-        }else{
+        } else {
             return TYPE_LEFT;
         }
     }
@@ -52,6 +61,34 @@ public class VoiceListAdapter extends BaseAdapter {
     public int getViewTypeCount() {
         return 2;
     }
+
+    private boolean isDisplayTime(int pos) {
+        Log.d(TAG, pos + "--> data: " + new Date(voiceList.get(pos).unixTime));
+
+        if (pos == 0) return true;
+
+        if ((voiceList.get(pos).unixTime - voiceList.get(pos - 1).unixTime) > 3 * 60 * 1000) { // over 3min, display the time
+            return true;
+        }
+
+        return false;
+    }
+
+
+    private String getTimeDisplay(int pos) {
+        String curDate = dataFormat.format(new Date(voiceList.get(pos).unixTime));
+
+        if (pos == 0) return curDate;
+
+        String lastDate = dataFormat.format(new Date(voiceList.get(pos - 1).unixTime));
+
+        if (curDate.substring(0, timeIdx).compareTo(lastDate.substring(0, timeIdx)) == 0) {
+            return curDate.substring(timeIdx);
+        }
+
+        return curDate;
+    }
+
 
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
@@ -68,15 +105,19 @@ public class VoiceListAdapter extends BaseAdapter {
 
 
             holder.textTime = (TextView) convertView.findViewById(R.id.text_time);
+            holder.textDuration = (TextView) convertView.findViewById(R.id.text_duration);
             holder.viewSpeaker = (View) convertView.findViewById(R.id.speaker);
             holder.viewButton = (View) convertView.findViewById(R.id.play_view);
+
+            Log.d(TAG, "++++++++++ pos: " + position);
+
             convertView.setTag(holder);
 
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        holder.textTime.setText(String.format("%.1f\"", voiceList.get(position).duration * 1.0 / 1000));
+        holder.textDuration.setText(String.format("%.1f\"", voiceList.get(position).duration * 1.0 / 1000));
         holder.viewButton.setTag(holder);
         holder.viewButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,12 +129,37 @@ public class VoiceListAdapter extends BaseAdapter {
             }
         });
 
+
+        if (isDisplayTime(position)) {
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.textTime.getLayoutParams();
+            params.height = 60;
+            params.topMargin = 15;
+            params.bottomMargin = 15;
+            holder.textTime.setLayoutParams(params);
+
+
+            holder.textTime.setText(getTimeDisplay(position));
+
+            Log.d(TAG, " >>>>>>>>> " + " get height: " + holder.textTime.getHeight());
+            Log.d(TAG, " ===>>>>>> " + " get text: " + holder.textTime.getText());
+        } else {
+            holder.textTime.setText("");
+
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.textTime.getLayoutParams();
+            params.height = 0;
+            params.topMargin = 0;
+            params.bottomMargin = 0;
+            holder.textTime.setLayoutParams(params);
+        }
+
+
         return convertView;
     }
 
 
     public class ViewHolder {
         public TextView textTime;
+        public TextView textDuration;
         public View viewSpeaker;
         public View viewButton;
     }

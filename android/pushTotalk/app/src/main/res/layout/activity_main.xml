@@ -21,9 +21,11 @@
         <ListView
             android:id="@+id/voice_list"
             android:divider="@color/empty"
-            android:dividerHeight="18dp"
+            android:dividerHeight="0dp"
+            android:footerDividersEnabled="true"
             android:stackFromBottom="true"
             android:transcriptMode="alwaysScroll"
+            android:listSelector="@android:color/transparent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 

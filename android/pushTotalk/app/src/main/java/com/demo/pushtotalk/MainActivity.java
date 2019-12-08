@@ -7,6 +7,7 @@ import android.Manifest;
 import android.content.ComponentName;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.AnimationDrawable;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.IBinder;
@@ -84,6 +85,9 @@ public class MainActivity extends AppCompatActivity implements Common {
 
         listView = findViewById(R.id.voice_list);
         listView.setAdapter(voiceAdapter);
+        listView.setHeaderDividersEnabled(true);
+        listView.setFooterDividersEnabled(true);
+
 
         mButtonConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -206,6 +210,23 @@ public class MainActivity extends AppCompatActivity implements Common {
                 case MSG_H_VOICE_SAVE_FAILED:
                     break;
 
+                case MSG_H_VOICE_PLAYING:
+                    VoiceListAdapter.ViewHolder h = (VoiceListAdapter.ViewHolder)msg.obj;
+                    if(h!=null){
+                        h.viewSpeaker.setBackgroundResource(R.drawable.voice_playing);
+                        AnimationDrawable ani = (AnimationDrawable)h.viewSpeaker.getBackground();
+                        ani.start();
+                    }
+
+                    break;
+
+                case MSG_H_VOICE_PLAY_END:
+                    VoiceListAdapter.ViewHolder vh = (VoiceListAdapter.ViewHolder)msg.obj;
+                    if(vh!=null){
+                        vh.viewSpeaker.setBackgroundResource(R.drawable.ic_voice_2);
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -264,16 +285,34 @@ public class MainActivity extends AppCompatActivity implements Common {
     }
 
     public void voicePlay(String path, VoiceListAdapter.ViewHolder holder) {
+        Message msg= new Message();
+        msg.what = MSG_H_VOICE_PLAYING;
+        msg.obj = holder;
+        mHandler.sendMessage(msg);
+
         mAudioProcess.playAudio(path);
         this.lastHolder = holder;
     }
 
     public void voicePlayStop() {
+        if(this.lastHolder != null){
+            Message msg= new Message();
+            msg.what = MSG_H_VOICE_PLAY_END;
+            msg.obj = this.lastHolder;
+            mHandler.sendMessage(msg);
+
+        }
+
         mAudioProcess.stopPlay();
     }
 
     public void onVoicePlayStop() {
         // todo update ui
+        Message msg= new Message();
+        msg.what = MSG_H_VOICE_PLAY_END;
+        msg.obj = this.lastHolder;
+        mHandler.sendMessage(msg);
+
         Log.d(TAG, "play end");
     }
 
