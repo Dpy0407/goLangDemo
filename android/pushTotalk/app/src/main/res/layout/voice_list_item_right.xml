@@ -25,6 +25,18 @@
             android:background="@color/empty">
 
             <LinearLayout
+                android:layout_width="15dp"
+                android:layout_height="45dp"
+                android:gravity="center">
+                <ImageView
+                    android:id="@+id/status"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:background="@drawable/ic_warning"
+                    />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/play_view"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/message_height"

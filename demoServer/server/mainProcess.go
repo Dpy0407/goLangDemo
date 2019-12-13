@@ -35,11 +35,13 @@ type IContex struct {
 }
 
 func (this *IContex) sendMessage(msg IMessage) {
+	this.StateMutex.Lock()
 	if DEVICE == msg.MsgDst {
 		MessageSend(this.udpConn, *this.deviceAddr, msg)
 	} else if MOBILE == msg.MsgDst {
 		MessageSendTCP(this.tcpConn, msg)
 	}
+	this.StateMutex.Unlock()
 }
 
 var main2deviceChan chan *IMessage = make(chan *IMessage, 5)
@@ -71,15 +73,15 @@ func onAuthenticate(ctx *IContex, msg *IMessage, addr *net.UDPAddr) {
 	if DEVICE != msg.MsgSrc {
 		log.Printf("Auth src error, should be device")
 	}
-
-	ctx.deviceAddr = addr
-	msg.MsgType = MSG_ACK
-	MessageSend(ctx.udpConn, *addr, *msg)
 	ctx.StateMutex.Lock()
+	ctx.deviceAddr = addr
 	if ctx.mobileAddr != nil && ctx.deviceAddr != nil {
 		ctx.State = SERVER_STATE_READY
 	}
 	ctx.StateMutex.Unlock()
+
+	msg.MsgType = MSG_ACK
+	MessageSend(ctx.udpConn, *addr, *msg)
 }
 
 func onTcpAuthenticate(ctx *IContex, msg *IMessage, conn *net.TCPConn) {
@@ -105,7 +107,7 @@ func onTcpAuthenticate(ctx *IContex, msg *IMessage, conn *net.TCPConn) {
 }
 
 func onOffline(ctx *IContex, msg *IMessage) {
-
+	ctx.StateMutex.Lock()
 	if DEVICE == msg.MsgSrc {
 		log.Printf("client offline, ip:%v, id = 0x%X...\r\n", ctx.deviceAddr, msg.MsgSrc)
 		ctx.deviceAddr = nil
@@ -118,7 +120,6 @@ func onOffline(ctx *IContex, msg *IMessage) {
 		}
 	}
 
-	ctx.StateMutex.Lock()
 	ctx.State = SERVER_STATE_INIT
 	ctx.StateMutex.Unlock()
 }
@@ -129,15 +130,18 @@ func onTcpHeatBeat(ctx *IContex, msg *IMessage) {
 	MessageSendTCP(ctx.tcpConn, *msg)
 }
 
-func onTCPClientLost(ctx *IContex) {
+func onTCPClientLost(ctx *IContex, conn *net.TCPConn) {
 	log.Printf("connect lost, ip:%v\r\n", ctx.tcpConn.RemoteAddr())
+	if ctx.tcpConn.RemoteAddr().String() != conn.RemoteAddr().String() {
+		// do noting
+		return
+	}
+	ctx.StateMutex.Lock()
 	ctx.mobileAddr = nil
 	if ctx.tcpConn != nil {
 		ctx.tcpConn.Close()
 		ctx.tcpConn = nil
 	}
-
-	ctx.StateMutex.Lock()
 	ctx.State = SERVER_STATE_INIT
 	ctx.StateMutex.Unlock()
 }
@@ -172,9 +176,10 @@ func tcpProcessLoop(ctx *IContex) {
 			continue
 		}
 
-		n, data := ReadFromTCPConn(ctx.tcpConn)
+		conn := ctx.tcpConn
+		n, data := ReadFromTCPConn(conn)
 		if n <= 0 {
-			onTCPClientLost(ctx)
+			onTCPClientLost(ctx, conn)
 			continue
 		}
 		msg := MessageParse(data[:n])

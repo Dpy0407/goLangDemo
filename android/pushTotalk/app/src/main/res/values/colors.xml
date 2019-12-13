@@ -1,11 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#008577</color>
-    <color name="colorPrimaryDark">#00574B</color>
-    <color name="colorAccent">#D81B60</color>
+    <color name="colorPrimary">#d8d8d8</color>
+    <color name="colorPrimaryDark">#e8e8e8</color>
+    <color name="colorAccent">#057C05</color>
     <color name="yellow">#D8D000</color>
     <color name="empty">#00000000</color>
     <color name="light">#FFE5E5E5</color>
     <color name="dark">#A8000000</color>
+    <color name="dark_gray">#90000000</color>
     <color name="gray">#50000000</color>
+    <color name="green">#057C05</color>
+    <color name="red">#FF0000</color>
+
+
+    <color name="popBackground">#D0000000</color>
+    <color name="popTextColor">#B0FFFFFF</color>
+    <color name="popDivColor">#20000000</color>
+    <color name="popButtonColor0">#80FFFFFF</color>
+    <color name="popButtonColor1">#90FFFFFF</color>
+
+
+    <color name="pushButtonColor0">#80FFFFFF</color>
+    <color name="pushButtonColor1">#C0FFFFFF</color>
+
+    <color name="recordBackground">#90000000</color>
+    <color name="recordForeground">#80FFFFFF</color>
+    <color name="recordProgress">#D24CAF50</color>
+
 </resources>

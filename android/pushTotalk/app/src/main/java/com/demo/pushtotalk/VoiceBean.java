@@ -11,11 +11,13 @@ public class VoiceBean implements Common {
 
     private File file;
 
-    public VoiceOrientation ori = VoiceOrientation.INVAID;
+    public VoiceType type = VoiceType.INVAID;
 
     public int duration = 0;
 
     public long unixTime = 0;
+
+    public VoiceStatus status = VoiceStatus.NONE;
 
     public File getFile() {
         return file;
@@ -59,9 +61,9 @@ public class VoiceBean implements Common {
 
         if (idx > 0 && (fileName.length() > idx + 2)) {
             if (fileName.toCharArray()[idx + 1] == 's') {
-                this.ori = VoiceOrientation.SEND;
+                this.type = VoiceType.SEND;
             } else {
-                this.ori = VoiceOrientation.RECEIVE;
+                this.type = VoiceType.RECEIVE;
             }
         } else {
             return false;

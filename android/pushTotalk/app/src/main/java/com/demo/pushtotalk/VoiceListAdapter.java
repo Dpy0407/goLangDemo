@@ -1,11 +1,18 @@
 package com.demo.pushtotalk;
 
+import android.graphics.Rect;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
@@ -23,6 +30,9 @@ public class VoiceListAdapter extends BaseAdapter {
     private SimpleDateFormat dataFormat;
     private int timeIdx = 0;
 
+    private ItemPopupWindow itemMenu = null;
+    private ListView mainList = null;
+
     VoiceListAdapter(MainActivity context, List<VoiceBean> list) {
         this.context = context;
         this.voiceList = list;
@@ -30,6 +40,8 @@ public class VoiceListAdapter extends BaseAdapter {
         String strDateFormat = "yyyy/MM/dd HH:mm";
         this.dataFormat = new SimpleDateFormat(strDateFormat);
         this.timeIdx = strDateFormat.indexOf("HH:mm");
+        this.itemMenu = new ItemPopupWindow();
+        mainList = context.findViewById(R.id.voice_list);
     }
 
     @Override
@@ -50,7 +62,7 @@ public class VoiceListAdapter extends BaseAdapter {
 
     @Override
     public int getItemViewType(int position) {
-        if (voiceList.get(position).ori == Common.VoiceOrientation.SEND) {
+        if (voiceList.get(position).type == Common.VoiceType.SEND) {
             return TYPE_RIGHT;
         } else {
             return TYPE_LEFT;
@@ -108,8 +120,7 @@ public class VoiceListAdapter extends BaseAdapter {
             holder.textDuration = (TextView) convertView.findViewById(R.id.text_duration);
             holder.viewSpeaker = (View) convertView.findViewById(R.id.speaker);
             holder.viewButton = (View) convertView.findViewById(R.id.play_view);
-
-            Log.d(TAG, "++++++++++ pos: " + position);
+            holder.viewStatus = (ImageView) convertView.findViewById(R.id.status);
 
             convertView.setTag(holder);
 
@@ -124,8 +135,26 @@ public class VoiceListAdapter extends BaseAdapter {
             public void onClick(View v) {
                 context.voicePlayStop();
                 ViewHolder h = (ViewHolder) v.getTag();
+                if (voiceList.get(position).type == Common.VoiceType.RECEIVE) {
+                    VoiceBean vb = voiceList.get(position);
+                    if (vb.status == Common.VoiceStatus.UNREAD) {
+                        h.viewStatus.setBackgroundResource(R.color.empty);
+                        vb.status = Common.VoiceStatus.NONE;
+                        voiceList.set(position, vb);
+                    }
+                }
+
                 Log.d(TAG, h.textTime.getText().toString());
                 context.voicePlay(voiceList.get(position).getFilePath(), h);
+            }
+        });
+
+        holder.viewButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                itemMenu.showPopupWindow(v, position);
+                Log.d(TAG, "long clicked");
+                return true;
             }
         });
 
@@ -140,8 +169,6 @@ public class VoiceListAdapter extends BaseAdapter {
 
             holder.textTime.setText(getTimeDisplay(position));
 
-            Log.d(TAG, " >>>>>>>>> " + " get height: " + holder.textTime.getHeight());
-            Log.d(TAG, " ===>>>>>> " + " get text: " + holder.textTime.getText());
         } else {
             holder.textTime.setText("");
 
@@ -150,6 +177,20 @@ public class VoiceListAdapter extends BaseAdapter {
             params.topMargin = 0;
             params.bottomMargin = 0;
             holder.textTime.setLayoutParams(params);
+        }
+
+        if (voiceList.get(position).type == Common.VoiceType.RECEIVE) {
+            if (voiceList.get(position).status == Common.VoiceStatus.UNREAD) {
+                holder.viewStatus.setBackgroundResource(R.drawable.circle_red);
+            } else {
+                holder.viewStatus.setBackgroundResource(R.color.empty);
+            }
+        } else if (voiceList.get(position).type == Common.VoiceType.SEND) {
+            if (voiceList.get(position).status == Common.VoiceStatus.SEND_FAILED) {
+                holder.viewStatus.setBackgroundResource(R.drawable.ic_warning);
+            } else {
+                holder.viewStatus.setBackgroundResource(R.color.empty);
+            }
         }
 
 
@@ -162,6 +203,111 @@ public class VoiceListAdapter extends BaseAdapter {
         public TextView textDuration;
         public View viewSpeaker;
         public View viewButton;
+        public ImageView viewStatus;
     }
+
+
+    public class ItemPopupWindow extends PopupWindow {
+        private View content;
+        private ListView listView;
+        private ArrayAdapter<String> adapter = null;
+
+        private int currentIdx = -1;
+
+        final String DELETE = "Delete";
+        final String RETRY = "Resend";
+
+        public ItemPopupWindow() {
+            this.content = LayoutInflater.from(context).inflate(R.layout.voice_menu, null);
+            this.setContentView(this.content);
+
+            listView = this.content.findViewById(R.id.menu_list);
+            int w = context.getWindowManager().getDefaultDisplay().getWidth();
+            this.setWidth(w / 4);
+            this.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+            this.setFocusable(true);
+            this.setOutsideTouchable(true);
+            this.update();
+
+            this.adapter = new ArrayAdapter<String>(context, R.layout.menu_list_item);
+            listView.setAdapter(adapter);
+
+            listView.setOnItemClickListener(new ListView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+                    String item = adapter.getItem(arg2);
+                    if (currentIdx < 0 || currentIdx >= voiceList.size()) {
+                        Log.e(TAG, "index error");
+                        return;
+                    }
+
+                    if (item == DELETE) {
+                        context.deleteVoice(currentIdx);
+                    } else if (item == RETRY) {
+                        context.retrySendVoice(currentIdx);
+                    }
+
+                    dismiss();
+                }
+            });
+        }
+
+
+        public void showPopupWindow(View parent, int index) {
+            if (!this.isShowing()) {
+
+                adapter.clear();
+                currentIdx = index;
+
+                if (voiceList.get(currentIdx).status == Common.VoiceStatus.SEND_FAILED) {
+                    adapter.add(RETRY);
+                }
+                adapter.add(DELETE);
+
+                int height = Utils.dip2px(context, adapter.getCount() * 40 + 2);
+
+                this.setHeight(height);
+
+                adapter.notifyDataSetChanged();
+
+                int windowPos[] = calculatePopWindowPos(parent, height);
+
+                this.showAtLocation(parent, Gravity.TOP | Gravity.START, windowPos[0], windowPos[1]);
+            } else {
+                this.dismiss();
+            }
+        }
+
+        private int[] calculatePopWindowPos(final View parent, int vh) {
+            int windowPos[] = new int[2];
+
+            Rect mainRect = new Rect();
+            Rect parentRect = new Rect();
+
+            int offset = 20;
+            parent.getGlobalVisibleRect(parentRect);
+            mainList.getGlobalVisibleRect(mainRect);
+
+            boolean isNeedShowDown = false;
+
+            if (parentRect.top - vh - offset < mainRect.top) {
+                isNeedShowDown = true;
+            }
+
+
+            if (isNeedShowDown) {
+                windowPos[0] = parentRect.left;
+                windowPos[1] = parentRect.bottom + offset;
+
+            } else {
+                windowPos[0] = parentRect.left;
+                windowPos[1] = parentRect.top - vh - offset;
+            }
+
+            return windowPos;
+        }
+
+    }
+
 
 }

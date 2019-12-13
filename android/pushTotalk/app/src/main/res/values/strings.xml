@@ -1,3 +1,18 @@
 <resources>
-    <string name="app_name">pushTotalk</string>
+    <string name="app_name">PushToTalk</string>
+    <string name="connet_setting">Connect Setting</string>
+    <string name="clear_all">Clear Messages</string>
+
+    <string name="title_ip">IP :</string>
+    <string name="title_port">Port :</string>
+    <string name="auto_connect">Auto Connecting on Launch</string>
+    <string name="cancel">Cancel</string>
+    <string name="connect">Connect</string>
+    <string name="push_talk">Push and Talk</string>
+    <string name="confirm">Confirm</string>
+    <string name="clear_confirm_msg">Are you sure clear all messages?</string>
+
+    <string name="retry">Retry</string>
+    <string name="delete">Delete</string>
+
 </resources>

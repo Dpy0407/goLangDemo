@@ -67,6 +67,9 @@ public class AudioProcess {
 
 
     public void startRecord() {
+        if (isRecording) {
+            return;
+        }
         lastRecordPath = null;
         mExecutorService.submit(new Runnable() {
             @Override
@@ -116,8 +119,13 @@ public class AudioProcess {
         }
     }
 
-    public void stopRecord() {
+    synchronized public void stopRecord() {
         if (!isRecording) {
+            return;
+        }
+
+
+        if (mMediaRecorder == null) {
             return;
         }
 
@@ -153,6 +161,7 @@ public class AudioProcess {
         isRecording = false;
         releaseRecorder();
     }
+
 
     private void releaseRecorder() {
         if (null != mMediaRecorder) {
@@ -305,13 +314,44 @@ public class AudioProcess {
     public File[] getAllFiles() {
         File folder = new File(this.mFilePath);
         File[] files = folder.listFiles();
-        Arrays.sort(files);
-
-        for (File f : files) {
-            Log.d(TAG, f.getAbsolutePath());
+        if(files == null || files.length == 0){
+            return null;
         }
 
+        Arrays.sort(files);
+
+//        for (File f : files) {
+//            Log.d(TAG, f.getAbsolutePath());
+//        }
+
         return files;
+    }
+
+    public void clearFile(final String path){
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                File file = new File(path);
+                file.delete();
+            }
+        });
+    }
+
+    public void clearAllFiles(){
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                File folder = new File(mFilePath);
+                File[] files = folder.listFiles();
+                if(files == null || files.length == 0){
+                    return;
+                }
+
+                for (File f : files) {
+                   f.delete();
+                }
+            }
+        });
     }
 
 

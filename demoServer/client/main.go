@@ -62,7 +62,7 @@ func main() {
 		if DEVICE == id {
 			addrString = "127.0.0.1:9090"
 		} else {
-			addrString = "127.0.0.1:8080"
+			addrString = "127.0.0.1:8081"
 		}
 	}
 
@@ -73,7 +73,7 @@ func main() {
 		if DEVICE == id {
 			addr.Port = 9090
 		} else {
-			addr.Port = 8080
+			addr.Port = 8081
 		}
 
 	}

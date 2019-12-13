@@ -42,8 +42,12 @@ public class ProcessThread extends Thread implements Common {
                 } else {
                     // give up current data, init dataBlock
                     context.mSendData.Init();
+                    context.onSendVoiceResult(false);
                 }
             }
+        }else if (BlockState.DATA_STATE_SEND_DONE == context.mSendData.State){
+            context.mSendData.Init();
+            context.onSendVoiceResult(true);
         }
 
         if (BlockState.DATA_STATE_DONE == context.mReviceData.State) {
@@ -120,7 +124,7 @@ public class ProcessThread extends Thread implements Common {
 
 
     private void onDataAckDone(DemoMessage msg) {
-        context.mSendData.Init();
+        context.mSendData.State = BlockState.DATA_STATE_SEND_DONE;
     }
 
     public void dataSend(byte[] data){

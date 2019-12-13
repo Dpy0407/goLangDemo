@@ -8,7 +8,7 @@ import (
 )
 
 const UDP_PORT = 9090
-const TCP_PORT = 8080
+const TCP_PORT = 8081
 
 func init() {
 	log.SetFlags(log.Lshortfile)

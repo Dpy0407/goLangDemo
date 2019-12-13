@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:background="@drawable/pop_background"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_marginHorizontal="@dimen/base_margin"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/setting_item_height"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="6dp"
+            android:gravity="center"
+            android:text="@string/clear_confirm_msg"
+            android:textColor="@color/popTextColor"/>
+    </LinearLayout>
+
+
+    <RelativeLayout
+        android:layout_marginHorizontal="@dimen/base_margin"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/setting_item_height"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/cancel"
+            android:layout_gravity="center"
+            android:background="@drawable/pop_button"
+            android:layout_width="80dp"
+            android:layout_height="30dp"
+            android:textAllCaps="false"
+            android:text="@string/cancel"/>
+        <Button
+            android:id="@+id/confirm"
+            android:layout_gravity="center"
+            android:background="@drawable/pop_button"
+            android:layout_alignParentRight="true"
+            android:layout_width="80dp"
+            android:layout_height="30dp"
+            android:textAllCaps="false"
+            android:text="@string/confirm"/>
+    </RelativeLayout>
+
+
+</LinearLayout>

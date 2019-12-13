@@ -44,10 +44,14 @@ public class TcpService extends Service implements Common {
     private OutputStream outputStream = null;
     private boolean isReadThreadStart = false;
     private boolean isSendThreadStart = false;
+    private boolean isHeartBeatThreadStart = false;
     private Lock sockeIStreamLock = new ReentrantLock();
     private Lock sockeOStreamLock = new ReentrantLock();
     private Queue<byte[]> sendQue = new LinkedList<byte[]>();
     private DataHandlers mHandlers = null;
+
+    private String serverIP = CONFIG_SERVER_IP;
+    private int serverPort = CONFIG_SERVER_PORT;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -81,10 +85,17 @@ public class TcpService extends Service implements Common {
         this.mHandlers = handlers;
     }
 
+    public void setServerAddress(String ip, int port) {
+        this.serverIP = ip;
+        this.serverPort = port;
+    }
+
     public void DisconnectToServer() {
+        Log.d(TAG, "disconnect to server...");
         try {
             if (clientSocket != null) {
                 clientSocket.close();
+                clientSocket = null;
             }
 
             sockeIStreamLock.lock();
@@ -144,6 +155,17 @@ public class TcpService extends Service implements Common {
         isReadThreadStart = true;
     }
 
+    private void StartHeartBeadThread() {
+        if (isHeartBeatThreadStart) {
+            return;
+        }
+
+        heartBeatThread h = new heartBeatThread();
+        h.start();
+
+        isHeartBeatThreadStart = true;
+    }
+
     private void dumpData(byte[] data) {
         Log.d(TAG, DemoMessage.arr2HexString(data));
     }
@@ -188,8 +210,10 @@ public class TcpService extends Service implements Common {
                 if (clientSocket != null && clientSocket.isConnected()) {
                     return;
                 }
+                clientSocket = new Socket();
 
-                clientSocket = new Socket(CONFIG_SERVER_IP, CONFIG_SERVER_PORT);
+                clientSocket.connect(new InetSocketAddress(serverIP, serverPort), 3000);
+
 //            clientSocket.setSoTimeout(5*1000);
                 if (clientSocket != null && clientSocket.isConnected()) {
                     sockeIStreamLock.lock();
@@ -199,17 +223,27 @@ public class TcpService extends Service implements Common {
                     sockeOStreamLock.lock();
                     outputStream = clientSocket.getOutputStream();
                     sockeOStreamLock.unlock();
+
+                    StartReadThread();
+                    StartSendThread();
                 }
-
-
-                StartReadThread();
-                StartSendThread();
 
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
 
             }
+
+            if (clientSocket != null && clientSocket.isConnected()) {
+                if (mHandlers != null) {
+                    mHandlers.onNotify(CMD_NOTIFY_RESULT, MSG_H_CONNECT_SUCCESS);
+                }
+            } else {
+                if (mHandlers != null) {
+                    mHandlers.onNotify(CMD_NOTIFY_RESULT, MSG_H_CONNECT_FAILED);
+                }
+            }
+
         }
     }
 
@@ -225,7 +259,7 @@ public class TcpService extends Service implements Common {
                 if ((clientSocket != null) && clientSocket.isConnected()) {
                     SendDataToServer(data);
                 } else {
-                    return;
+                    break;
                 }
 
                 try {
@@ -233,9 +267,11 @@ public class TcpService extends Service implements Common {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
 
-                    return;
+                    break;
                 }
             }
+
+            isHeartBeatThreadStart = false;
         }
     }
 
@@ -254,7 +290,7 @@ public class TcpService extends Service implements Common {
                 e.printStackTrace();
             }
 
-            isReadThreadStart = false;
+            isSendThreadStart = false;
         }
     }
 
@@ -372,13 +408,22 @@ public class TcpService extends Service implements Common {
 
                     int len = readData(buffer);
 
-                    if (buffer.length > 0) {
+                    if (len > 0) {
                         if (mHandlers != null) {
                             mHandlers.onReciveHandle(Arrays.copyOf(buffer, len));
                         } else {
                             dumpData(Arrays.copyOf(buffer, len));
                         }
 
+                    }
+                    else{
+                        if (mHandlers != null){
+                            mHandlers.onNotify(CMD_NOTIFY_RESULT, MSG_H_SERVER_DISCONNECT);
+                        }
+
+                        DisconnectToServer();
+
+                        break;
                     }
                     Thread.sleep(100);
                 }
@@ -403,8 +448,7 @@ public class TcpService extends Service implements Common {
                     byte[] data = intent.getByteArrayExtra("data");
                     sendQue.offer(data);
                 } else if (CMD_START_HEARTBEAT == cmd) {
-                    heartBeatThread h = new heartBeatThread();
-                    h.start();
+                    StartHeartBeadThread();
                 }
             }
         }
