@@ -35,6 +35,7 @@ import java.io.File;
 
 public class MainActivity extends Activity implements Common {
     static String TAG = "[*** MAIN]";
+    public boolean isMainActivityRun = true;
     private TcpService tcpService = null;
     private MainHandlers mHandlers = new MainHandlers();
     private ProcessThread mProcessThread = new ProcessThread(this);
@@ -162,9 +163,11 @@ public class MainActivity extends Activity implements Common {
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy...");
+        mAudioProcess.onExit(voiceList);
         disconnectServer();
         unbindService(conn);
         super.onDestroy();
+        isMainActivityRun = false;
     }
 
 
@@ -368,7 +371,7 @@ public class MainActivity extends Activity implements Common {
         }
     }
 
-    private void disconnectServer() {
+    public void disconnectServer() {
         if (this.mClientState == ClientState.STATE_AUTHED) {
             DemoMessage msg = new DemoMessage();
             msg.msgSrc = MOBILE;
@@ -379,6 +382,9 @@ public class MainActivity extends Activity implements Common {
         }
     }
 
+    public boolean isConnectServer(){
+        return this.mClientState == ClientState.STATE_AUTHED;
+    }
 
     //--------- media about -----------
 

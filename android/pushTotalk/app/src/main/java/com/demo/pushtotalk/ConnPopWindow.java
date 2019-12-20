@@ -6,6 +6,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.PopupWindow;
@@ -18,9 +19,13 @@ public class ConnPopWindow extends PopupWindow {
 
     private CheckBox autoConnCheckBox = null;
     private EditText editTextIP = null;
-    private  EditText editTextPort = null;
+    private EditText editTextPort = null;
+    private Button confirmButton = null;
 
-    public ConnPopWindow(MainActivity ctx){
+    final String CONNECT = "Connect";
+    final String DISCONNECT = "Disconnect";
+
+    public ConnPopWindow(MainActivity ctx) {
         this.context = ctx;
         LayoutInflater inflater = LayoutInflater.from(context);
 
@@ -29,7 +34,7 @@ public class ConnPopWindow extends PopupWindow {
         int w = context.getWindowManager().getDefaultDisplay().getWidth();
 
         this.setContentView(conentView);
-        this.setWidth(w / 3 * 2 );
+        this.setWidth(w / 3 * 2);
         this.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         this.setFocusable(true);
         this.setOutsideTouchable(false);
@@ -50,17 +55,27 @@ public class ConnPopWindow extends PopupWindow {
 //        editTextIP.setFocusableInTouchMode(true);
 //        editTextPort.setFocusable(false);
 //        editTextPort.setFocusableInTouchMode(true);
-        conentView.findViewById(R.id.conn_setting_confirm).setOnClickListener(new View.OnClickListener() {
+        confirmButton = (Button) conentView.findViewById(R.id.conn_setting_confirm);
+        confirmButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //todo: save configure
-                context.mConfigModel.setServerIp(editTextIP.getText().toString());
-                context.mConfigModel.setServerPort(editTextPort.getText().toString());
-                context.mConfigModel.isAutoConnecting = autoConnCheckBox.isChecked();
-                context.mConfigModel.saveConfig();
+                if (confirmButton.getText() == CONNECT) {
+                    //todo: save configure
+                    context.mConfigModel.setServerIp(editTextIP.getText().toString());
+                    context.mConfigModel.setServerPort(editTextPort.getText().toString());
+                    context.mConfigModel.isAutoConnecting = autoConnCheckBox.isChecked();
+                    context.mConfigModel.saveConfig();
 
-                context.connectServer();
-                dismiss();
+                    context.connectServer();
+                    dismiss();
+                } else {
+                    context.disconnectServer();
+                    // do not dismiss
+                    editTextIP.setEnabled(true);
+                    editTextPort.setEnabled(true);
+                    autoConnCheckBox.setEnabled(true);
+                    confirmButton.setText(CONNECT);
+                }
             }
         });
 
@@ -87,12 +102,12 @@ public class ConnPopWindow extends PopupWindow {
 
 
     public void showPopupWindow() {
-        if(context.mConfigModel.isConfigReady){
+        if (context.mConfigModel.isConfigReady) {
             editTextIP.setText(context.mConfigModel.serverIp);
             editTextIP.setSelection(context.mConfigModel.serverIp.length());
             editTextIP.clearFocus();
 
-            String port= String.format("%d", context.mConfigModel.serverPort);
+            String port = String.format("%d", context.mConfigModel.serverPort);
             editTextPort.setText(port);
             editTextPort.setSelection(port.length());
             editTextPort.clearFocus();
@@ -100,9 +115,22 @@ public class ConnPopWindow extends PopupWindow {
             autoConnCheckBox.setChecked(context.mConfigModel.isAutoConnecting);
         }
 
+        if (context.isConnectServer()) {
+            editTextIP.setEnabled(false);
+            editTextPort.setEnabled(false);
+            autoConnCheckBox.setEnabled(false);
+            confirmButton.setText(DISCONNECT);
+        } else {
+            editTextIP.setEnabled(true);
+            editTextPort.setEnabled(true);
+            autoConnCheckBox.setEnabled(true);
+            confirmButton.setText(CONNECT);
+        }
+
+
         if (!this.isShowing()) {
 //            this.showAsDropDown(parent, parent.getLayoutParams().width / 2, 5);
-            this.showAtLocation(conentView, Gravity.CENTER,0,0);
+            this.showAtLocation(conentView, Gravity.CENTER, 0, 0);
         } else {
             this.dismiss();
         }

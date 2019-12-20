@@ -3,6 +3,7 @@ package message
 import (
 	"encoding/binary"
 	"net"
+	"time"
 )
 import "log"
 
@@ -212,4 +213,60 @@ func ReadFromTCPConn(tcpConn *net.TCPConn) (int, []byte) {
 	}
 
 	return 0, nil
+}
+
+func ReadFromTCPConnTimeout(conn *net.TCPConn, timeout time.Duration) (int, []byte) {
+	var data []byte
+	tmp := make([]byte, 1024)
+	lenData := -1
+
+	err := conn.SetReadDeadline(time.Now().Add(timeout))
+	if err != nil {
+		log.Println("SetReadDeadline failed:", err)
+		// do something else, for example create new conn
+		conn.Close()
+		return 0, nil
+	}
+
+	for {
+		n, err := conn.Read(tmp)
+		if err != nil {
+			conn.Close()
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				log.Println("read timeout:", err)
+				// time out
+			} else {
+				log.Println("read error:", err)
+				// some error else, do something else, for example create new conn
+			}
+			return 0, nil
+		}
+
+		if -1 == lenData {
+			data = append(data, tmp[:n]...)
+			if len(data) >= 4 {
+				lenData = int(binary.LittleEndian.Uint32(data[0:4]))
+				data = data[4:]
+			} else {
+				continue
+			}
+
+			if len(data) >= lenData {
+				break
+			}
+		} else {
+			data = append(data, tmp[:n]...)
+			if len(data) >= lenData {
+				break
+			}
+		}
+	}
+
+	if err = conn.SetReadDeadline(time.Time{}); err != nil {
+		log.Println("clear conn read timeout failed:", err)
+		conn.Close()
+		return 0, nil
+	}
+
+	return len(data), data
 }

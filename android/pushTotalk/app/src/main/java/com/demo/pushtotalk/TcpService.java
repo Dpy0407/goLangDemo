@@ -208,7 +208,7 @@ public class TcpService extends Service implements Common {
         public void run() {
             try {
                 if (clientSocket != null && clientSocket.isConnected()) {
-                    return;
+                    DisconnectToServer();
                 }
                 clientSocket = new Socket();
 
@@ -279,9 +279,14 @@ public class TcpService extends Service implements Common {
         public void run() {
             try {
                 while (true) {
-                    byte[] data = sendQue.poll();
-                    if (data != null) {
-                        SendDataToServer(data);
+                    if ((clientSocket != null) && clientSocket.isConnected()){
+                        byte[] data = sendQue.poll();
+                        if (data != null) {
+                            SendDataToServer(data);
+                        }
+
+                    }else{
+                        break;
                     }
 
                     Thread.sleep(100);

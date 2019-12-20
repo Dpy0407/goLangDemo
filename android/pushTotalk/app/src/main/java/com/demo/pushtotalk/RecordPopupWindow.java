@@ -59,8 +59,6 @@ public class RecordPopupWindow extends PopupWindow implements Common {
         circleProgress.setIndeterminate(false);
         circleProgress.setRadius(size/2 - 40);
 
-        Log.e(TAG, "isIndeterminate: "+circleProgress.isIndeterminate());
-
         this.setOnDismissListener(new OnDismissListener() {
             @Override
             public void onDismiss() {

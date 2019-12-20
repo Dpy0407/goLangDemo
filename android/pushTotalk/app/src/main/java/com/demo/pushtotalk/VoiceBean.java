@@ -69,6 +69,12 @@ public class VoiceBean implements Common {
             return false;
         }
 
+        if (fileName.indexOf("_ur") > 0) {
+            this.status = VoiceStatus.UNREAD;
+        } else if (fileName.indexOf("_sf") > 0) {
+            this.status = VoiceStatus.SEND_FAILED;
+        }
+
         String time_s = fileName.substring(0, idx);
         try {
             this.unixTime = Long.parseLong(time_s);

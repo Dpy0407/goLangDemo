@@ -1,11 +1,11 @@
 package main
 
 import (
-	"net"
-	"sync"
-
 	. "../blockData"
 	. "../message"
+	"net"
+	"sync"
+	"time"
 )
 import "log"
 
@@ -131,11 +131,13 @@ func onTcpHeatBeat(ctx *IContex, msg *IMessage) {
 }
 
 func onTCPClientLost(ctx *IContex, conn *net.TCPConn) {
-	log.Printf("connect lost, ip:%v\r\n", ctx.tcpConn.RemoteAddr())
 	if ctx.tcpConn.RemoteAddr().String() != conn.RemoteAddr().String() {
 		// do noting
+		log.Printf("connect lost, ip:%v\r\n", conn.RemoteAddr())
+		conn.Close()
 		return
 	}
+	log.Printf("connect lost, ip:%v\r\n", ctx.tcpConn.RemoteAddr())
 	ctx.StateMutex.Lock()
 	ctx.mobileAddr = nil
 	if ctx.tcpConn != nil {
@@ -153,20 +155,25 @@ func tcpConnectLoop(ctx *IContex, tcpListener *net.TCPListener) {
 			log.Printf("tcp connet error")
 		}
 		log.Printf("client connect success.")
-		n, data := ReadFromTCPConn(conn)
+
+		n, data := ReadFromTCPConnTimeout(conn, 5*time.Second)
+
+		//n, data := ReadFromTCPConn(conn)
 		if n <= 0 {
+			conn.Close()
 			continue
 		}
 
 		msg := MessageParse(data[:n])
 		if msg == nil {
+			log.Println("msg parse error, n=", n)
+			conn.Close()
 			continue
 		}
 
 		if MSG_AUTH_REQ == msg.MsgType {
 			onTcpAuthenticate(ctx, msg, conn)
 		}
-
 	}
 }
 
@@ -177,7 +184,9 @@ func tcpProcessLoop(ctx *IContex) {
 		}
 
 		conn := ctx.tcpConn
+
 		n, data := ReadFromTCPConn(conn)
+
 		if n <= 0 {
 			onTCPClientLost(ctx, conn)
 			continue

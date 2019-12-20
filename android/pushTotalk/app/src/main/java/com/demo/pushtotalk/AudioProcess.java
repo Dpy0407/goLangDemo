@@ -14,6 +14,7 @@ import android.content.Context;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.FileInputStream;
@@ -304,7 +305,6 @@ public class AudioProcess {
                     context.onSaveVoiceResult(false);
                     return;
                 }
-
             }
         });
 
@@ -314,7 +314,7 @@ public class AudioProcess {
     public File[] getAllFiles() {
         File folder = new File(this.mFilePath);
         File[] files = folder.listFiles();
-        if(files == null || files.length == 0){
+        if (files == null || files.length == 0) {
             return null;
         }
 
@@ -327,7 +327,7 @@ public class AudioProcess {
         return files;
     }
 
-    public void clearFile(final String path){
+    public void clearFile(final String path) {
         mExecutorService.submit(new Runnable() {
             @Override
             public void run() {
@@ -337,18 +337,56 @@ public class AudioProcess {
         });
     }
 
-    public void clearAllFiles(){
+    public void clearAllFiles() {
         mExecutorService.submit(new Runnable() {
             @Override
             public void run() {
                 File folder = new File(mFilePath);
                 File[] files = folder.listFiles();
-                if(files == null || files.length == 0){
+                if (files == null || files.length == 0) {
                     return;
                 }
 
                 for (File f : files) {
-                   f.delete();
+                    f.delete();
+                }
+            }
+        });
+    }
+
+    public void onExit(final List<VoiceBean> list) {
+
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                for (VoiceBean item : list) {
+                    String filePath = item.getFilePath();
+                    if (!filePath.endsWith(".amr")) {
+                        continue;
+                    }
+                    Log.d(TAG, "exit:" + filePath);
+                    String tmp = filePath.substring(0, filePath.length() - 4);
+                    if (item.status == Common.VoiceStatus.UNREAD) {
+                        if (tmp.endsWith("_ur")) {
+                            continue;
+                        }
+                        String newName = filePath.substring(0, filePath.length() - 4) + "_ur" + ".amr";
+                        File newFile = new File(newName);
+                        item.getFile().renameTo(newFile);
+                    } else if (item.status == Common.VoiceStatus.SEND_FAILED) {
+                        if (tmp.endsWith("_sf")) {
+                            continue;
+                        }
+                        String newName = filePath.substring(0, filePath.length() - 4) + "_sf" + ".amr";
+                        File newFile = new File(newName);
+                        item.getFile().renameTo(newFile);
+                    } else {
+                        if (tmp.endsWith("_ur") || tmp.endsWith("_sf")) {
+                            String newName = tmp.substring(0, tmp.length() - 3) + ".amr";
+                            File newFile = new File(newName);
+                            item.getFile().renameTo(newFile);
+                        }
+                    }
                 }
             }
         });

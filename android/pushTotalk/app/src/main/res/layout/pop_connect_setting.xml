@@ -22,6 +22,8 @@
             android:id="@+id/ip_editor"
             android:maxLength="15"
             android:maxLines="1"
+            android:hint="Input the server ip"
+            android:textColorHint="@color/light_0"
             android:textCursorDrawable="@drawable/editor_text_cursor"
             android:drawableBottom="@drawable/editor_text_select"
             android:background="@color/empty"
@@ -47,6 +49,8 @@
 
         <EditText
             android:id="@+id/port_editor"
+            android:hint="Input the server port"
+            android:textColorHint="@color/light_0"
             android:textCursorDrawable="@drawable/editor_text_cursor"
             android:drawableBottom="@drawable/editor_text_select"
             android:textColor="@color/popTextColor"

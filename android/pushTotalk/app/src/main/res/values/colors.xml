@@ -11,6 +11,7 @@
     <color name="gray">#50000000</color>
     <color name="green">#057C05</color>
     <color name="red">#FF0000</color>
+    <color name="light_0">#30FFFFFF</color>
 
 
     <color name="popBackground">#D0000000</color>

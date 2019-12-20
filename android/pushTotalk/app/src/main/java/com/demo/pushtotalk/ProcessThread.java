@@ -17,7 +17,7 @@ public class ProcessThread extends Thread implements Common {
 
     public void run() {
         try {
-            while (true) {
+            while (context.isMainActivityRun) {
                 DemoMessage msg = context.msgQue.poll();
                 if (msg != null) {
                     msgHandle(msg);

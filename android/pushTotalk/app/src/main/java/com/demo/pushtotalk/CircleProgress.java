@@ -34,7 +34,6 @@ public class CircleProgress extends ProgressBar {
 
         super.setIndeterminate(false);
 
-        Log.e(TAG, "isIndeterminate: "+this.isIndeterminate());
 
     }
 
@@ -62,12 +61,8 @@ public class CircleProgress extends ProgressBar {
         mPaint.setStrokeWidth(strokeWidth+4);
         mPaint.setAntiAlias(true);
 
-		Log.e("max", ""+getMax());
-		Log.e("getProgress", ""+getProgress());
         float sweepAngle = getProgress() * 1.0f / getMax() * 360;
 
-
-        Log.e("[CircleProgress]", "sweepAngle:" + sweepAngle);
         RectF oval= new RectF(cx - mRadius,cy - mRadius, cx+mRadius,cy+mRadius);
 
 
